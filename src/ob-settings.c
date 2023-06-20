@@ -1,20 +1,4 @@
 #define OB_SETTINGS_FILE "openbadger-settings.json"
-#if 0
-json reader ./openbadget-settings.json
-if fail open /opt/tester/etc/openbadger=settings
-else use defaults
-
-  reader number
-  OSDP PD control port path
-
-    root = json_load_file (json_string, 0, &status_json);
-    if (!root)
-
-    value = json_object_get (root, field);
-    if (!json_is_string (value))
-      found_field = 0;
-#endif
-
 
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +17,7 @@ else use defaults
   settings file name is openbadger-settings.json
 
   parameters:
+    bits - number of bits to output. Must be 512 or 128 
     control - path of libosdp-conformance PD control socket.  default is /opt/osdp-conformance/PD/open-osdp-control
     reader - smartcard reader index.  starts at zero.  default is zero.
     verbosity - message detail level.  default is 3, debug is 9, silent is 0
@@ -73,6 +58,12 @@ int ob_read_settings
   };
   if (settings_found)
   {
+    value = json_object_get (root, "bits");
+    if (json_is_string (value))
+    {
+      sscanf(json_string_value(value), "%d", &i);
+      ctx->bits_to_return = i;
+    };
     value = json_object_get (root, "control");
     if (json_is_string (value))
     {

@@ -307,26 +307,45 @@ int main
 
   if (status EQUALS ST_OK)
   {
+    char command [1024];
     int i;
     char octet_string [3];
     char osdp_command [2048];
-    unsigned char raw_key [128/8];
+    unsigned char raw_key [64];
+    FILE *resp;
+    int return_size;
 
     fprintf(stderr, "Public Key Open Credential:\n");
-    memcpy(raw_key, ctx->ec_public_key+16, 128/8);
-    ob_dump_buffer (ctx, raw_key, sizeof(raw_key), 0);
-    strcpy(osdp_command, "\"command\":\"present-card\",\"bits\":\"128\",\"raw\":\"");
+    memset(raw_key, 0, sizeof(raw_key));
+    if (ctx->bits_to_return EQUALS 128)
+    {
+      memcpy(raw_key, ctx->ec_public_key+16, 128/8);
+      return_size = 128/8;
+    }
+    else
+    {
+      memcpy(raw_key, ctx->ec_public_key, sizeof(raw_key));
+      return_size = 64;
+    }
 
-    for (i=0; i<sizeof(raw_key); i++)
+    ob_dump_buffer (ctx, raw_key, sizeof(raw_key), 0);
+    sprintf(osdp_command, "{\"command\":\"present-card\",\"format\":\"raw\",\"bits\":\"%d\",\"raw\":\"", ctx->bits_to_return);
+
+    for (i=0; i<return_size; i++)
     {
       sprintf(octet_string, "%02X", raw_key [i]);
       strcat(osdp_command, octet_string);
     };
-    strcat(osdp_command, "\"");
+    strcat(osdp_command, "\"}");
     if (ctx->verbosity > 3)
       fprintf(stderr, "OSDP Response will be:\n%s\n", osdp_command);
     if (ctx->verbosity > 0)
       fprintf(stderr, "Issuing OSDP PD response.\n");
+    resp = fopen("pkoc-read.json", "w");
+    fprintf(resp, "%s", osdp_command);
+    fclose(resp);
+    sprintf(command, "/opt/osdp-conformance/bin/open-osdp-kick PD <pkoc-read.json");
+    system(command);
   };
 
   if (status != ST_OK)
