@@ -1,0 +1,8 @@
+run obtest-pkoc
+arg 1 is reader number
+
+uses settings file for
+  reader number
+  OSDP PD control port path
+  verbosity
+
