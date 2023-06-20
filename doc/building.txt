@@ -1,2 +1,5 @@
 assumes openbadger has been installed.
 
+note this requires OpenSSL 3
+
+
