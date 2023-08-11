@@ -211,7 +211,7 @@ int main
 
   if (status EQUALS ST_OK)
   {
-    // send application select to card
+    // send authentication command to card
 
     dwRecvLength = sizeof(pbRecvBuffer);
     status_pcsc = SCardTransmit(rdrctx->pcsc, &rdrctx->pioSendPci, smartcard_command, smartcard_command_length, NULL, pbRecvBuffer, &dwRecvLength);
@@ -296,6 +296,11 @@ int main
     tbs_blob = fopen("tbs-pkoc.bin", "w");
     fwrite(pkoc_context.transaction_identifier, 1, OB_PKOC_TRANSACTID_LENGTH, tbs_blob);
     fclose(tbs_blob);
+
+    /*
+      having constructed a proper DER-formatted signature and a proper DER-formatted copy of the public key extracted from the card,
+      use openssl to perform an ECDSA signature verification operation.
+    */
 
     sprintf(verify_command, "openssl version;openssl dgst -sha256 -verify %s -signature ec-sig.der tbs-pkoc.bin", OBTEST_PKOC_PUBLIC_KEY);
     if (ctx->verbosity > 3)
