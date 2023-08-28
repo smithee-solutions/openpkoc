@@ -11,7 +11,7 @@ include-before:
 Introduction
 ============
 
-this document describes processing PKOC cards with the work "on-loaded" 
+This document describes processing PKOC cards with the work "on-loaded" 
 (not off-loaded) to the ACU.
 
 These all assume the standard OSDP manufacturer specific command
@@ -41,17 +41,39 @@ processing.
 osdp_PKOC_AUTH_RESPONSE
 =======================
 
-consists of:
-osdp_MFGREP response to an osdp_POLL
+This consists of an osdp_MFGREP response.  It is sent in response to
+an osdp_POLL command.
 
-Response is an osdp_MFGREP, the payload is:
+osdp_MFGREP payload
+-------------------
 
-- multi-part message header
-- Uncompressed Public Key TLV exactly as described in [1]
-- Digital Signature TLV exatly as described in [2]
+| Offset | Contents |
+| ------ | -------- |
+|        |          |
+|   0    | Manufacturer OUI (3 octets) |
+|        |                             |
+|   3    | 0x01 (Mfg Response Code) |
+|        |                                                       |
+|   4    | Total response payload size (Least Significant Octet) |
+|        |                                                       |
+|   5    | Total response payload size (Most Significant Octet)  |
+|        |                                                       |
+|   6    | Offset in response (Least Significant Octet)          |
+|        |                                                       |
+|   7    | Offset in response (Most Significant Octet)           |
+|        |                                                       |
+|   8    | Response length (Least Significant Octet)             |
+|        |                                                       |
+|   9    | Response length (Most Significant Octet)              |
+|        |                                                       |
+|  10    | blah                                                  |
+|        | Uncompressed Public Key TLV                           |
+|        | Digital Signature TLV                                 |
 
 References
 ==========
 
 [1] PKOC 1.0
+
+[2] Integrated Engineering OSDP extensions, document 100-01G-PS-01-INID "Vendor Specific OSDP Extensions v10b"
 
