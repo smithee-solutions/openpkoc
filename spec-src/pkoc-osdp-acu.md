@@ -68,6 +68,14 @@ traffic.
 - ACU extracts cardholder number from osdp_AUTH_RESPONSE and proceeds with access control
 processing.
 
+Providing the Transaction ID to the PD
+--------------------------------------
+
+The PD needs the transaction id to perform the Authentication Request.  This
+value can be provided by the PD, or provided by the ACU in response to an osdp_PKOC_CARD_PRESENT response, or provided in advance of a card reader
+using the osdp_PKOC_NEXT_TRANSACTION command.  The PD may request a pre-defined
+transaction id by using the osdp_PKOC_TRANSACTION_REFRESH response.
+
 \newpage{}
 
 PKOC Manufacturer-specific OSDP commands
@@ -87,6 +95,10 @@ Commands for use within MFG and MFGREP
 | osdp_PKOC_AUTH_REQUEST | 0xE1 |
 |                        |      |
 | osdp_PKOC_AUTH_RESPONSE | 0xE2 |
+|                        |      |
+| osdp_PKOC_NEXT_TRANSACTION | 0xE3 |
+|                        |      |
+| osdp_PKOC_TRANSACTION_REFRESH | 0xE4 |
 |                        |      |
 
 \newpage{}
@@ -110,7 +122,7 @@ Contents of the osdp_MFGREP payload:
 |        |          |
 |   0    | Manufacturer OUI (3 octets) |
 |        |                             |
-|   3    | 0xE1 (Mfg Response Code) |
+|   3    | 0xE0 (Mfg Response Code) |
 |        |                                                       |
 |   4    | Total response payload size (Least Significant Octet) |
 |        |                                                       |
@@ -133,20 +145,21 @@ osdp_PKOC_AUTH_REQUEST
 
 This REQUEST is sent by the ACU so that the PD may issue an Authentication Request
 to the card.  This contains the protocol version, transaction ID, and
-"reader" identifier.
+"reader" identifier.  If the Transaction ID has been previously provided the
+"Transaction ID TLV" field will contain a zero (tag 0x4c, length 1, value 0.)
 
 MFG payload
---------------
+-----------
 
 Contents of the osdp_MFG payload:
 
 | Offset | Contents |
 | ------ | -------- |
 |        |          |
-|   0    | Manufacturer OUI (3 octets) |
-|        |                             |
-|   3    | 0xE1 (Mfg Request Code) |
-|        |                                                       |
+|   0    | Manufacturer OUI (3 octets)                          |
+|        |                                                      |
+|   3    | 0xE1 (Mfg Request Code)                              |
+|        |                                                      |
 |   4    | Total request payload size (Least Significant Octet) |
 |        |                                                       |
 |   5    | Total request payload size (Most Significant Octet)  |
@@ -158,18 +171,18 @@ Contents of the osdp_MFG payload:
 |   8    | Request length (Least Significant Octet)             |
 |        |                                                       |
 |   9    | Request length (Most Significant Octet)              |
-|        |                                                       |
-|  10    | Protocol Version                           |
-|        | Transaction ID TLV                       |
-|        | Reader Identifer                       |
+|        |                                                      |
+|  10    | Protocol Version                                     |
+|        | Transaction ID TLV (length 1 value 0 if predefined)  |
+|        | Reader Identifer                                     |
 
 \newpage{}
 
-osdp_PKOC_FULL_AUTH_RESPONSE
-============================
+osdp_PKOC_AUTH_RESPONSE
+=======================
 
 This RESPONSE consists of an osdp_MFGREP response.  It is sent in response to
-an osdp_POLL command.  osdp_PKOC_AUTH_RESPONSE is manufacturer code 0xEC.
+an osdp_POLL command.
 This response is sent after the Authentication Response is received from the card
 by the reader.
 
@@ -202,12 +215,102 @@ Contents of the osdp_MFGREP payload:
 
 \newpage{}
 
+osdp_PKOC_TRANSACTION_REFRESH
+=============================
+
+This RESPONSE consists of an osdp_MFGREP response.  It is sent in response to
+an osdp_POLL command.  
+This response is sent when the PD wants to pre-load a transaction id for the next
+card read.  It is expected this would be generated within a few poll cycles after an osdp_PKOC_AUTH_RESPONSE.
+Note there is no payload beyond the OUI and the response code.
+
+MFGREP payload
+--------------
+
+Contents of the osdp_MFGREP payload:
+
+| Offset | Contents |
+| ------ | -------- |
+|        |          |
+|   0    | Manufacturer OUI (3 octets) |
+|        |                             |
+|   3    | 0xE4 (Mfg Response Code) |
+|        |                                                       |
+
+\newpage{}
+
+osdp_PKOC_NEXT_TRANSACTION
+==========================
+
+This COMMAND consists of an osdp_MFG command.  It is sent to provide the PD
+with a transaction ID to be used in the next Authentication Reuqest.
+This command may be sent at any time.
+
+MFG payload
+--------------
+
+Contents of the osdp_MFG payload:
+
+| Offset | Contents |
+| ------ | -------- |
+|        |          |
+|   0    | Manufacturer OUI (3 octets) |
+|        |                             |
+|   3    | 0xE3 (Mfg Command Code) |
+|        |                                                       |
+|   4    | Total command payload size (Least Significant Octet) |
+|        |                                                       |
+|   5    | Total command payload size (Most Significant Octet)  |
+|        |                                                       |
+|   6    | Offset in command (Least Significant Octet)          |
+|        |                                                       |
+|   7    | Offset in command (Most Significant Octet)           |
+|        |                                                       |
+|   8    | Command length (Least Significant Octet)             |
+|        |                                                       |
+|   9    | Command length (Most Significant Octet)              |
+|        |                                                       |
+|  10    | Transaction ID TLV                           |
+
+\newpage{}
+
+Appendix
+========
+
+Colophon
+--------
+
+Document created with Markdown, using pandoc.  PDF converter assistance provided by latex.  Linux command line to create the PDF is
+
+  pandoc --toc -o pkoc-osdp-acu.pdf pkoc-osdp-acu.md
+
+Document source is in github.
+
+Security Considerations
+-----------------------
+
+It is assumed all of this message traffic happens inside a proper OSDP
+secure channel using a unique paired (not the default) key.
+
+OSDP Considerations
+-------------------
+
+If you perform PKOC operations on an OSDP "chain" (RS-485 bus with more than one PD)
+it is possible that long delays will be introduced between the time the PD
+sends an osdp_PKOC_CARD_PRESENT response and when the ACU sends an
+osdp_PKOC_AUTH_REQUEST.  It is recommended you use a chain with a minimal number
+of PD's (preferrably only one) and/or a higher line speed (38,400) and/or use
+a PD that connects over TCP/IP.
+
+
 References
-==========
+----------
 
 [1] PKOC 1.0
 
 [2] Integrated Engineering OSDP extensions, document 100-01G-PS-01-INID "Vendor Specific OSDP Extensions v10b"
 
 [3] OSDP, IEC 60839-11-5
+
+[4] ISO 7816-4-2020
 
