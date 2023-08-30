@@ -1,7 +1,7 @@
 ---
-title: OSDP ACU PKOC Card Processing
-author: Rodney Thayer
-date: August 29, 2023
+title: OSDP ACU PKOC Card Processing Version 1.11
+author: Rodney Thayer rodney@smithee.solutions
+date: August 30, 2023
 include-before:
 - '`\newpage{}`{=latex}'
 ---
@@ -99,7 +99,9 @@ Commands for use within MFG and MFGREP
 | osdp_PKOC_NEXT_TRANSACTION | 0xE3 |
 |                        |      |
 | osdp_PKOC_TRANSACTION_REFRESH | 0xE4 |
-|                        |      |
+|                               |      |
+| osdp_PKOC_READER_ERROR        | 0xE5 |
+|                               |      |
 
 \newpage{}
 
@@ -172,7 +174,11 @@ Contents of the osdp_MFG payload:
 |        |                                                       |
 |   9    | Request length (Most Significant Octet)              |
 |        |                                                      |
-|  10    | Protocol Version                                     |
+|  10    | Auth Command P1 |
+|        |                                                      |
+|  11    | Auth Command P2 |
+|        |                                                      |
+|  12    | Protocol Version TLV |
 |        | Transaction ID TLV (length 1 value 0 if predefined)  |
 |        | Reader Identifer                                     |
 
@@ -247,7 +253,7 @@ with a transaction ID to be used in the next Authentication Reuqest.
 This command may be sent at any time.
 
 MFG payload
---------------
+-----------
 
 Contents of the osdp_MFG payload:
 
@@ -274,17 +280,78 @@ Contents of the osdp_MFG payload:
 
 \newpage{}
 
+osdp_PKOC_READER_ERROR
+======================
+
+This RESPONSE consists of an osdp_MFGREP command and associated payload.  It is sent in response to a poll when
+there is an error reading the card.
+
+Error values:
+
+| Error Code (msb,lsb) | Meaning |
+| -------------------- | ------- |
+|            |         |
+| 0x0000     | No error |
+|            |         |
+| 0x0001     | S1/S2 error from card
+|            |         |
+| 0x0002     | problem accessing card
+|            |         |
+| 0x0003-0x07FF | Reserved for future use. |
+|            |         |
+| 0x8000-0xFFFF | Reserved for private use. |
+|            |         |
+
+
+MFGREP payload
+--------------
+
+Contents of the osdp_MFGREP payload:
+
+| Offset | Contents |
+| ------ | -------- |
+|        |          |
+|   0    | Manufacturer OUI (3 octets) |
+|        |                             |
+|   3    | 0xE5 (Mfg Response Code) |
+|        |                                                       |
+|   4    | Total response payload size (Least Significant Octet) |
+|        |                                                       |
+|   5    | Total response payload size (Most Significant Octet)  |
+|        |                                                       |
+|   6    | Offset in response (Least Significant Octet)          |
+|        |                                                       |
+|   7    | Offset in response (Most Significant Octet)           |
+|        |                                                       |
+|   8    | Response length (Least Significant Octet)             |
+|        |                                                       |
+|   9    | Response length (Most Significant Octet)              |
+|        |                                                       |
+|  10    | Reader Error Code (Least Significant Octet)           |
+|        |                                                       |
+|  11    | Reader Error Code (Most Significant Octet)            |
+|        |                                                       |
+|  12    | Reader Error Code (Most Significant Octet)            |
+|        |                                                       |
+|  13    | ISO 7818 S1 response value                            |
+|        |                                                       |
+|  14    | ISO 7818 S2 response value                            |
+
+
+\newpage{}
+
 Appendix
 ========
 
 Colophon
 --------
 
-Document created with Markdown, using pandoc.  PDF converter assistance provided by latex.  Linux command line to create the PDF is
+This document was written in 'markdown', using pandoc.  PDF converter assistance provided by latex.  Linux command line to create the PDF is
 
   pandoc --toc -o pkoc-osdp-acu.pdf pkoc-osdp-acu.md
 
 Document source is in github.
+
 
 Security Considerations
 -----------------------
