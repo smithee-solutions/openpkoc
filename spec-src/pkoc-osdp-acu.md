@@ -1,7 +1,7 @@
 ---
 title: OSDP ACU PKOC Card Processing Version 1.11
 author: Rodney Thayer rodney@smithee.solutions
-date: August 30, 2023
+date: August 31, 2023
 include-before:
 - '`\newpage{}`{=latex}'
 ---
@@ -11,13 +11,20 @@ include-before:
 Introduction
 ============
 
+This document describes alternatives to process PKOC cards for access control.
+It is assumed that these would be considered as an alternative to a reader
+that handles the complete PKOC operation and just returns a cardholder number 
+to the ACU.
 This document describes processing PKOC cards with the work "on-loaded" 
-(not off-loaded) to the ACU.
+(not off-loaded) to the ACU. 
 
 These all assume the standard OSDP manufacturer specific command
 format.  This specification further adopts the multi-part message format 
 proposed by Integrated Engineering for PIV.
 
+Use of a PKOC card will require multiple card operations and so the
+osdp_KEEPACTIVE command is recommended to ensure the reader maintains
+the link to the card during the entire card processing operation.
 Since these messages are likely larger than the minimum size OSDP message
 it is recommended the ACU send an osdp_ACURXSIZE command with a size of at least 1024
 bytes.
@@ -67,6 +74,50 @@ traffic.
 - ACU processes the Authentication Response, including necessary EC crypto operations.
 - ACU extracts cardholder number from osdp_AUTH_RESPONSE and proceeds with access control
 processing.
+
+Message Flow
+------------
+
+Note this uses osdp_RAW as the card-present indication.
+
+```text
+
+EAC ACU     PD    CARD
+--- ---    ---    ----
+ |   |      |      |
+ |   |      |      |
+             <-----
+             card is presented
+ |   |      |      |
+ |   |      |      |
+      <-----
+      osdp_RAW, new format, pkoc card version string
+ |   |      |      |
+ |   |      |      |
+      ----->
+Auth Request
+ |   |      |      |
+ |   |      |      |
+             ----->
+       Auth Request
+ |   |      |      |
+ |   |      |      |
+      ...
+      Poll/Ack Traffic
+      ...
+ |   |      |      |
+ |   |      |      |
+             <-----
+             Auth Response
+ |   |      |      |
+ |   |      |      |
+      <-----
+      Auth Response
+ |   |      |      |
+ |   |      |      |
+  <-----
+  Card data
+```
 
 Providing the Transaction ID to the PD
 --------------------------------------
@@ -375,7 +426,7 @@ References
 
 [1] PKOC 1.0
 
-[2] Integrated Engineering OSDP extensions, document 100-01G-PS-01-INID "Vendor Specific OSDP Extensions v10b"
+[2] Integrated Engineering OSDP extensions, document 100-01G-PS-01-INID "Vendor Specific OSDP Extensions v10c".
 
 [3] OSDP, IEC 60839-11-5
 
