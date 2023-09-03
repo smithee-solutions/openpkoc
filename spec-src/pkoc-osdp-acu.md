@@ -1,7 +1,7 @@
 ---
-title: OSDP ACU PKOC Card Processing Version 1.11
+title: OSDP ACU PKOC Card Processing
 author: Rodney Thayer rodney@smithee.solutions
-date: August 31, 2023
+date: September 5, 2023
 include-before:
 - '`\newpage{}`{=latex}'
 ---
@@ -28,6 +28,15 @@ the link to the card during the entire card processing operation.
 Since these messages are likely larger than the minimum size OSDP message
 it is recommended the ACU send an osdp_ACURXSIZE command with a size of at least 1024
 bytes.
+
+About data formatting
+---------------------
+
+In the following tables when two or more TLV items are listed they are meant to be 
+"stacked" one after the other.  They are not wrapped with an outer TLV.  These are meant to 
+be in sync with the PKOC base specification's notation.
+
+If a field is meant to be not present it may be omitted or a value-0 length-1 value or a length-0 value may be used.
 
 \newpage{}
 
@@ -62,18 +71,22 @@ ACU creates the PKOC Authentication Request,
 
 - ACU initializes secure channel connection with PD.  Initialization
 includes osdp_ACURXSIZE of at least 1024 bytes and osdp_KEEPACTIVE.
+- Optionally, ACU sends blah to pre-load a transaction identifier in the PD to reduce message
+traffic.
 - ACU and PD exchange conventional osdp_POLL/osdp_ACK steady-state
 traffic.
 - cardholder presents card
 - PD identifiers card is a PKOC card and initiates PKOC card dialog.
-- PD sends osdp_PKOC_CARD_PRESENT
-- ACU creates transaction id
-- ACU sends osdp_PKOC_AUTH_REQUEST
+- (if the transaction ID has not been pre-loaded) PD sends (osdp_RAW or osdp_PKOC_CARD_PRESENT); ACU creates transaction id; ACU sends osdp_PKOC_AUTH_REQUEST
+- PD generates Authentication Request
 - card provides Authentication Response [1]
 - PD sends osdp_MFGREP("osdp_FULL_AUTH_RESPONSE") in response to osdp_POLL
 - ACU processes the Authentication Response, including necessary EC crypto operations.
 - ACU extracts cardholder number from osdp_AUTH_RESPONSE and proceeds with access control
 processing.
+- optionally PD sends OSDP_PKOC_TRANSACTION_REFRESH
+- optionally ACU sends OSDP_PKOC_NEXT_TRANSACTION
+
 
 Message Flow
 ------------
@@ -151,10 +164,31 @@ Commands for use within MFG and MFGREP
 |                        |      |
 | osdp_PKOC_TRANSACTION_REFRESH | 0xE4 |
 |                               |      |
-| osdp_PKOC_READER_ERROR        | 0xE5 |
+| osdp_PKOC_READER_ERROR        | 0xFE |
 |                               |      |
 
 \newpage{}
+
+osdp_RAW as 'Card Present'
+=========================
+
+The card present event can be represented two ways.  One is to use the new OSDP_PKOC_CARD_PRESENT response defined below.  Alternatively,
+an osdp_RAW message can be used. 
+
+Format of osdp_RAW for PKOC "Card Present"
+------------------------------------------
+
+| osdp_RAW Field | Value |
+| -------------- | ----- |
+| | |
+| Format Code    | 0x80  |
+| | |
+| Bit Count LSB  | number of bits in TLV field (LSB) |
+| | |
+| Bit Count MSB  | number of bits in TLV field (MSB) |
+| | |
+| Data           | Version Field TLV |
+| | |
 
 osdp_PKOC_CARD_PRESENT
 ======================
@@ -198,8 +232,9 @@ osdp_PKOC_AUTH_REQUEST
 
 This REQUEST is sent by the ACU so that the PD may issue an Authentication Request
 to the card.  This contains the protocol version, transaction ID, and
-"reader" identifier.  If the Transaction ID has been previously provided the
-"Transaction ID TLV" field will contain a zero (tag 0x4c, length 1, value 0.)
+"reader" identifier.  The order of these fields does not matter, the TLV tags
+identify them.  If the Transaction ID has been previously provided the
+"Transaction ID TLV" field will be omitted or encoded as omitted.
 
 MFG payload
 -----------
@@ -225,13 +260,13 @@ Contents of the osdp_MFG payload:
 |        |                                                       |
 |   9    | Request length (Most Significant Octet)              |
 |        |                                                      |
-|  10    | Auth Command P1 |
+|  10    | Auth Command Parameter 1 ("P1") - 1 octet             |
 |        |                                                      |
-|  11    | Auth Command P2 |
+|  11    | Auth Command Parameter 2 ("P2") - 1 octet             |
 |        |                                                      |
-|  12    | Protocol Version TLV |
-|        | Transaction ID TLV (length 1 value 0 if predefined)  |
-|        | Reader Identifer                                     |
+|  12    | Protocol Version TLV                                  |
+|        | Transaction ID TLV (or indicated to be omitted)       |
+|        | Reader Identifer TLV (or indicated to be omitted)     |
 
 \newpage{}
 
@@ -267,8 +302,7 @@ Contents of the osdp_MFGREP payload:
 |        |                                                       |
 |   9    | Response length (Most Significant Octet)              |
 |        |                                                       |
-|  10    | Uncompressed Public Key TLV                           |
-|        | Digital Signature TLV                                 |
+|  10    | PKOC Authentication Response TLV (contais Public Key and Digital Signature TLV) |
 
 \newpage{}
 
@@ -335,22 +369,23 @@ osdp_PKOC_READER_ERROR
 ======================
 
 This RESPONSE consists of an osdp_MFGREP command and associated payload.  It is sent in response to a poll when
-there is an error reading the card.
+there is an error reading the card.  The code 0xFE was select as the format
+corresponds to response 0xFE in [2].
 
 Error values:
 
-| Error Code (msb,lsb) | Meaning |
+| Error Code (1 octet) | Meaning |
 | -------------------- | ------- |
 |            |         |
-| 0x0000     | No error |
+| 0x00     | No error |
 |            |         |
-| 0x0001     | S1/S2 error from card
+| 0x01     | S1/S2 error from card
 |            |         |
-| 0x0002     | problem accessing card
+| 0x02     | problem accessing card
 |            |         |
-| 0x0003-0x07FF | Reserved for future use. |
+| 0x03-0x7F | Reserved for future use. |
 |            |         |
-| 0x8000-0xFFFF | Reserved for private use. |
+| 0x80-0xFF | Reserved for private use. |
 |            |         |
 
 
@@ -364,29 +399,12 @@ Contents of the osdp_MFGREP payload:
 |        |          |
 |   0    | Manufacturer OUI (3 octets) |
 |        |                             |
-|   3    | 0xE5 (Mfg Response Code) |
+|   3    | 0xFE (Mfg Response Code) |
 |        |                                                       |
-|   4    | Total response payload size (Least Significant Octet) |
+|   4    | Reader Error Code            |
 |        |                                                       |
-|   5    | Total response payload size (Most Significant Octet)  |
+|   5    | Error Info (size varies depending on error code)      |
 |        |                                                       |
-|   6    | Offset in response (Least Significant Octet)          |
-|        |                                                       |
-|   7    | Offset in response (Most Significant Octet)           |
-|        |                                                       |
-|   8    | Response length (Least Significant Octet)             |
-|        |                                                       |
-|   9    | Response length (Most Significant Octet)              |
-|        |                                                       |
-|  10    | Reader Error Code (Least Significant Octet)           |
-|        |                                                       |
-|  11    | Reader Error Code (Most Significant Octet)            |
-|        |                                                       |
-|  12    | Reader Error Code (Most Significant Octet)            |
-|        |                                                       |
-|  13    | ISO 7818 S1 response value                            |
-|        |                                                       |
-|  14    | ISO 7818 S2 response value                            |
 
 
 \newpage{}
@@ -402,6 +420,8 @@ This document was written in 'markdown', using pandoc.  PDF converter assistance
   pandoc --toc -o pkoc-osdp-acu.pdf pkoc-osdp-acu.md
 
 Document source is in github.
+
+Thanks to Mike Zercher, Mark de Olde, and other OSDP implentors for contributing feedback.
 
 
 Security Considerations
