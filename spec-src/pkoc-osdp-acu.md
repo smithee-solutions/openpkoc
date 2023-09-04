@@ -6,7 +6,7 @@ include-before:
 header-includes: |
   \usepackage{fancyhdr}
   \pagestyle{fancy}
-  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.20}
+  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.21}
   \fancyfoot[LE,RO]{\thepage}
 include-before:
 - '`\newpage{}`{=latex}'
@@ -427,11 +427,13 @@ Appendix
 Colophon
 --------
 
+
 This document was written in 'markdown', using pandoc.  PDF converter assistance provided by latex.  Linux command line to create the PDF is
 
   pandoc --toc -o pkoc-osdp-acu.pdf pkoc-osdp-acu.md
 
 Document source is in github.
+This is version 1.21 of this document.
 
 Thanks to Mike Zercher, Mark de Olde, and other OSDP implentors for contributing feedback.
 
