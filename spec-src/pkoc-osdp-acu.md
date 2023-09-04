@@ -3,6 +3,12 @@ title: OSDP ACU PKOC Card Processing
 author: Rodney Thayer rodney@smithee.solutions
 date: September 5, 2023
 include-before:
+header-includes: |
+  \usepackage{fancyhdr}
+  \pagestyle{fancy}
+  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.20}
+  \fancyfoot[LE,RO]{\thepage}
+include-before:
 - '`\newpage{}`{=latex}'
 ---
 
@@ -55,13 +61,17 @@ includes osdp_ACURXSIZE of at least 1024 bytes and osdp_KEEPACTIVE.
 - ACU and PD exchange conventional osdp_POLL/osdp_ACK steady-state
 traffic.
 - cardholder presents card
-- PD identifiers card is a PKOC card and initiates PKOC card dialog
-including an Authentication Request as defined in [1]
+- PD sends OSDP_CARD_PRESENT to the ACU, including the select response payload.
+- ACU sends OSDP_AUTH_REQUEST.  Some fields may be omitted due to pre-processing
+or PD-side values being provided.
+- PD sends Authentication Request to card
 - card provides Authentication Response [1]
-- PD sends osdp_MFGREP("osdp_FULL_AUTH_RESPONSE") in response to osdp_POLL
+- PD sends osdp_MFGREP("OSDP_AUTH_RESPONSE") in response to osdp_POLL
 - ACU processes the Authentication Response, including necessary EC crypto operations.
 - ACU extracts cardholder number from osdp_AUTH_RESPONSE and proceeds with access control
 processing.
+
+\newpage{}
 
 ACU-Generated Challenge
 -----------------------
@@ -80,7 +90,7 @@ traffic.
 - (if the transaction ID has not been pre-loaded) PD sends (osdp_RAW or osdp_PKOC_CARD_PRESENT); ACU creates transaction id; ACU sends osdp_PKOC_AUTH_REQUEST
 - PD generates Authentication Request
 - card provides Authentication Response [1]
-- PD sends osdp_MFGREP("osdp_FULL_AUTH_RESPONSE") in response to osdp_POLL
+- PD sends osdp_MFGREP("OSDP_AUTH_RESPONSE") in response to osdp_POLL
 - ACU processes the Authentication Response, including necessary EC crypto operations.
 - ACU extracts cardholder number from osdp_AUTH_RESPONSE and proceeds with access control
 processing.
@@ -146,7 +156,8 @@ PKOC Manufacturer-specific OSDP commands
 ========================================
 
 To implement these operations OSDP's manufacturer-specific command
-mechanism is used.  Three commands are defined, within the OUI _tbd_.
+mechanism is used.  Six commands are defined.  At this time individual vendors
+are expected to use their own OUI value or a locally defined value.
 
 Commands for use within MFG and MFGREP
 --------------------------------------
@@ -423,6 +434,8 @@ Document source is in github.
 
 Thanks to Mike Zercher, Mark de Olde, and other OSDP implentors for contributing feedback.
 
+PKOC as used here refers to the card format specificed by PSIA.
+
 
 Security Considerations
 -----------------------
@@ -444,7 +457,7 @@ a PD that connects over TCP/IP.
 References
 ----------
 
-[1] PKOC 1.0
+[1] PKOC NFC Card Specification, Version 1.0 Rev0, 6/13/2023.  Physical Security Interoperability Alliance.
 
 [2] Integrated Engineering OSDP extensions, document 100-01G-PS-01-INID "Vendor Specific OSDP Extensions v10c".
 
