@@ -97,6 +97,7 @@ processing.
 - optionally PD sends OSDP_PKOC_TRANSACTION_REFRESH
 - optionally ACU sends OSDP_PKOC_NEXT_TRANSACTION
 
+\newpage{}
 
 Message Flow
 ------------
@@ -142,6 +143,8 @@ Auth Request
   Card data
 ```
 
+\newpage{}
+
 Providing the Transaction ID to the PD
 --------------------------------------
 
@@ -149,8 +152,6 @@ The PD needs the transaction id to perform the Authentication Request.  This
 value can be provided by the PD, or provided by the ACU in response to an osdp_PKOC_CARD_PRESENT response, or provided in advance of a card reader
 using the osdp_PKOC_NEXT_TRANSACTION command.  The PD may request a pre-defined
 transaction id by using the osdp_PKOC_TRANSACTION_REFRESH response.
-
-\newpage{}
 
 PKOC Manufacturer-specific OSDP commands
 ========================================
@@ -192,8 +193,8 @@ Format of osdp_RAW for PKOC "Card Present"
 | osdp_RAW Field | Value |
 | -------------- | ----- |
 | | |
-| Format Code    | 0x80  |
-| | |
+| Format Code    | 0x80 (Note this value is defined in OSDP 2.2.1(Draft) |
+|                |                                                       |
 | Bit Count LSB  | number of bits in TLV field (LSB) |
 | | |
 | Bit Count MSB  | number of bits in TLV field (MSB) |
