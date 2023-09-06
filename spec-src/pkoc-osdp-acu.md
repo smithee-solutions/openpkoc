@@ -1,12 +1,12 @@
 ---
 title: OSDP ACU PKOC Card Processing
 author: Rodney Thayer rodney@smithee.solutions
-date: September 5, 2023
+date: September 6, 2023
 include-before:
 header-includes: |
   \usepackage{fancyhdr}
   \pagestyle{fancy}
-  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.21}
+  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.22}
   \fancyfoot[LE,RO]{\thepage}
 include-before:
 - '`\newpage{}`{=latex}'
@@ -35,14 +35,42 @@ Since these messages are likely larger than the minimum size OSDP message
 it is recommended the ACU send an osdp_ACURXSIZE command with a size of at least 1024
 bytes.
 
-About data formatting
----------------------
+Identifying PD Configuration
+----------------------------
+
+- if the PD handles the entire PKOC NFC card processing,
+it will send osdp_RAW responses with format "unspecified" (0x00)
+and a PKOC identifier as the cardholder field.  The ACU can infer it
+need not process PKOC operations.
+- if the PD provides the reader identifier it will return an empty
+(tag, length 0) reader identifier in the OSDP_PKOC_CARD_PRESENT
+response.  The ACU should send an empty reader identifier in the
+subsequent OSDP_PKOC_AUTH_REQUEST command.
+- if the PD provides the transaction identifier it will return an empty
+(tag, length 0) transaction identifier in the OSDP_PKOC_CARD_PRESENT
+response.  The ACU should send an empty transaction identifier in the
+subsequent OSDP_PKOC_AUTH_REQUEST command.
+
+
+Data Format Conventions
+-----------------------
 
 In the following tables when two or more TLV items are listed they are meant to be 
 "stacked" one after the other.  They are not wrapped with an outer TLV.  These are meant to 
 be in sync with the PKOC base specification's notation.
 
-If a field is meant to be not present it may be omitted or a value-0 length-1 value or a length-0 value may be used.
+If a field is meant to be not present it may be omitted or simply sent as 'present'
+it must use the format (tag, length=0.) 
+
+Two new tags are introduced, for error responses:
+
+| Tag | Contents |
+| --- | -------- |
+| | |
+| 0xFE | SW1, SW2.  Length=2 always. |
+| | |
+| 0xFD | Manufacturer-specific smartcard error response, Length 1-64 bytes |
+| | |
 
 \newpage{}
 
@@ -185,7 +213,8 @@ osdp_RAW as 'Card Present'
 =========================
 
 The card present event can be represented two ways.  One is to use the new OSDP_PKOC_CARD_PRESENT response defined below.  Alternatively,
-an osdp_RAW message can be used. 
+an osdp_RAW message can be used.   Note the payload for osdp_RAW must fit within a minimum-sized OSDP message (total 128 bytes in the
+response.)
 
 Format of osdp_RAW for PKOC "Card Present"
 ------------------------------------------
@@ -200,6 +229,12 @@ Format of osdp_RAW for PKOC "Card Present"
 | Bit Count MSB  | number of bits in TLV field (MSB) |
 | | |
 | Data           | Version Field TLV |
+|                |                                                       |
+|                | Reader ID TLV (returns empty if PD geneated)          |
+|                |                                                       |
+|                | Transaction Identifier TLV (returns empty if PD geneated) |
+|                |                                                       |
+|                | Error TLV (optional) |
 | | |
 
 osdp_PKOC_CARD_PRESENT
@@ -236,6 +271,7 @@ Contents of the osdp_MFGREP payload:
 |   9    | Response length (Most Significant Octet)              |
 |        |                                                       |
 |  10    | Supported Protocol Versions TLV                       |
+|        | Error TLV (optional)                                  |
 
 \newpage{}
 
@@ -315,6 +351,7 @@ Contents of the osdp_MFGREP payload:
 |   9    | Response length (Most Significant Octet)              |
 |        |                                                       |
 |  10    | PKOC Authentication Response TLV (contais Public Key and Digital Signature TLV) |
+|        | Error TLV                                             |
 
 \newpage{}
 
