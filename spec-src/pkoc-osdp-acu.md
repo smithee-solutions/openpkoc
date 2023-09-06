@@ -50,6 +50,8 @@ subsequent OSDP_PKOC_AUTH_REQUEST command.
 (tag, length 0) transaction identifier in the OSDP_PKOC_CARD_PRESENT
 response.  The ACU should send an empty transaction identifier in the
 subsequent OSDP_PKOC_AUTH_REQUEST command.
+- when the ACU constructs the OSDP_PKOC_AUTH_REQUEST it uses
+the current context to identify if it is to send the transaction identifier or the reader identifier.
 
 
 Data Format Conventions
