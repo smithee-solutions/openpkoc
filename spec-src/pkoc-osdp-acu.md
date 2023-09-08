@@ -1,16 +1,16 @@
 ---
 title: OSDP ACU PKOC Card Processing
-author: Rodney Thayer rodney@smithee.solutions
-date: September 6, 2023
 include-before:
 header-includes: |
   \usepackage{fancyhdr}
   \pagestyle{fancy}
-  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.22}
+  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.23}
   \fancyfoot[LE,RO]{\thepage}
 include-before:
 - '`\newpage{}`{=latex}'
 ---
+
+Version 1.23
 
 \newpage{}
 
@@ -34,6 +34,9 @@ the link to the card during the entire card processing operation.
 Since these messages are likely larger than the minimum size OSDP message
 it is recommended the ACU send an osdp_ACURXSIZE command with a size of at least 1024
 bytes.
+
+This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.  See
+http://creativecommons.org/licenses/by-sa/4.0/ for license details.
 
 Identifying PD Configuration
 ----------------------------
@@ -466,17 +469,24 @@ Appendix
 Colophon
 --------
 
+This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.  See
+http://creativecommons.org/licenses/by-sa/4.0/ for license details.
 
 This document was written in 'markdown', using pandoc.  PDF converter assistance provided by latex.  Linux command line to create the PDF is
 
   pandoc --toc -o pkoc-osdp-acu.pdf pkoc-osdp-acu.md
 
 Document source is in github.
-This is version 1.21 of this document.
-
-Thanks to Mike Zercher, Mark de Olde, and other OSDP implentors for contributing feedback.
 
 PKOC as used here refers to the card format specificed by PSIA.
+
+This is version 1.23 of this document.
+
+This document originated by Rodney Thayer (Smithee Solutions),
+Mike Zercher (Secure Element Solutions),
+and Mark de Olde (Integrated Engineering.)  Additional instigation provided
+by Ed Chandler.
+
 
 
 Security Considerations
