@@ -485,7 +485,7 @@ This is version 1.23 of this document.
 This document originated by Rodney Thayer (Smithee Solutions),
 Mike Zercher (Secure Element Solutions),
 and Mark de Olde (Integrated Engineering.)  Additional instigation provided
-by Ed Chandler.
+by Ed Chandler (Securty By Design.)
 
 
 
