@@ -60,6 +60,7 @@ settings
 #define EQUALS ==
 #define ST_OK (  0)
 
+void bytes_to_hex(unsigned char *raw, int length, char *byte_string);
 int hex_to_binary(PKOC_CONTEXT *ctx, char *hex, unsigned char *binary, int *length);
 int osdp_send_response_RAW(PKOC_CONTEXT *ctx, PKOC_RAW_CARD_PRESENT_PAYLOAD *raw);
 int pkoc_help(PKOC_CONTEXT *ctx);
@@ -78,6 +79,65 @@ struct option longopts [] = {
       {0, 0, 0, 0}};
 
 char optstring [1024];
+
+
+void bytes_to_hex
+  (unsigned char *raw,
+  int length,
+  char *byte_string)
+
+{ /* bytes_to_hex */
+
+  int i;
+  char *p;
+
+  p = byte_string;
+  for (i=0; i<length; i++)
+  {
+    sprintf(p, "%02X", *(raw+i));
+    p++;
+  };
+
+} /* bytes_to_hex */
+
+
+int hex_to_binary
+  (PKOC_CONTEXT *ctx,
+  char *hex,
+  unsigned char *binary,
+  int *length)
+
+{ /* hex_to_binary */
+
+  int count;
+  int hexit;
+  char octet_string [3];
+  char *p;
+  unsigned char *pbinary;
+
+
+  p = hex;
+  pbinary = binary;
+  count = strlen(hex);
+  if ((count % 2) != 0)
+  {
+    count = count - 1;
+    fprintf(ctx->log, "trimming hex string to even number of hexits.\n");
+  };
+  while (count > 0)
+  {
+    memcpy(octet_string, p, 2);
+    octet_string [2] = 0;
+    sscanf(octet_string, "%x", &hexit);
+    *pbinary = hexit;
+    pbinary++;
+    p = p + 2;
+    count = count - 2;
+  };
+
+  return(ST_OK);
+
+} /* hex_to_binary */
 
 
 int main
@@ -189,6 +249,29 @@ fprintf(stderr, "DEBUG: also send as mfg\n");
   return(status);
 
 } /* main for pkoc-pd */
+
+
+int osdp_send_response_RAW
+  (PKOC_CONTEXT *ctx,
+  PKOC_RAW_CARD_PRESENT_PAYLOAD *raw)
+
+{ /* osdp_send_response_RAW */
+
+  int bits;
+  char byte_string [1024];
+  char command [1024];
+
+
+  bytes_to_hex((unsigned char *)raw, sizeof(raw), byte_string);
+  bits = sizeof((unsigned char *)raw) * 8;
+  sprintf(command, 
+"{\"command\":\"present-card\", \"bits\":\"%d\", \"format\":\"80\", \"data\":\"%s\"}\n",
+    bits, byte_string);
+
+  return(ST_OK);
+
+} /* osdp_send_response_RAW */
+
 
 int pkoc_help
   (PKOC_CONTEXT *ctx)
