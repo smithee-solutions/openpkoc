@@ -4,13 +4,13 @@ include-before:
 header-includes: |
   \usepackage{fancyhdr}
   \pagestyle{fancy}
-  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.23}
+  \fancyfoot[CO,CE]{OSDP ACU PKOC Card Processing 1.24}
   \fancyfoot[LE,RO]{\thepage}
 include-before:
 - '`\newpage{}`{=latex}'
 ---
 
-Version 1.23
+Version 1.24
 
 \newpage{}
 
@@ -110,7 +110,7 @@ ACU-Generated Challenge
 -----------------------
 
 In this case the reader notifies the ACU that the card is present and the
-ACU creates the PKOC Authentication Request,
+ACU creates the PKOC Authentication Request.
 
 - ACU initializes secure channel connection with PD.  Initialization
 includes osdp_ACURXSIZE of at least 1024 bytes and osdp_KEEPACTIVE.
@@ -119,7 +119,7 @@ traffic.
 - ACU and PD exchange conventional osdp_POLL/osdp_ACK steady-state
 traffic.
 - cardholder presents card
-- PD identifiers card is a PKOC card and initiates PKOC card dialog.
+- PD identifies the card is a PKOC card and initiates PKOC card dialog.
 - (if the transaction ID has not been pre-loaded) PD sends (osdp_RAW or osdp_PKOC_CARD_PRESENT); ACU creates transaction id; ACU sends osdp_PKOC_AUTH_REQUEST
 - PD generates Authentication Request
 - card provides Authentication Response [1]
@@ -227,7 +227,7 @@ Format of osdp_RAW for PKOC "Card Present"
 | osdp_RAW Field | Value |
 | -------------- | ----- |
 | | |
-| Format Code    | 0x80 (Note this value is defined in OSDP 2.2.1(Draft) |
+| Format Code    | 0x80 - Note this value is defined in OSDP 2.2.1(Draft.) |
 |                |                                                       |
 | Bit Count LSB  | number of bits in TLV field (LSB) |
 | | |
@@ -388,7 +388,7 @@ osdp_PKOC_NEXT_TRANSACTION
 ==========================
 
 This COMMAND consists of an osdp_MFG command.  It is sent to provide the PD
-with a transaction ID to be used in the next Authentication Reuqest.
+with a transaction ID to be used in the next Authentication Request.
 This command may be sent at any time.
 
 MFG payload
@@ -423,7 +423,7 @@ osdp_PKOC_READER_ERROR
 ======================
 
 This RESPONSE consists of an osdp_MFGREP command and associated payload.  It is sent in response to a poll when
-there is an error reading the card.  The code 0xFE was select as the format
+there is an error reading the card.  The code 0xFE was selected as the format
 corresponds to response 0xFE in [2].
 
 Error values:
@@ -485,7 +485,7 @@ This is version 1.23 of this document.
 This document originated by Rodney Thayer (Smithee Solutions),
 Mike Zercher (Secure Element Solutions),
 and Mark de Olde (Integrated Engineering.)  Additional instigation provided
-by Ed Chandler (Securty By Design.)
+by Ed Chandler (Security By Design.)
 
 
 
