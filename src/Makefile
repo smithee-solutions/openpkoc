@@ -7,7 +7,8 @@
 PROGS=obtest-pkoc
 
 CC=clang
-CFLAGS=-c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -Wall -Werror
+CFLAGS= -D OPENPKOC_VERSION=\"1.23\" \
+  -c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -Wall -Werror
 LINK=clang
 LDFLAGS=-g /opt/tester/lib/libopenbadger.a -ljansson -lpcsclite 
 

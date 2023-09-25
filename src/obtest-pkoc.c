@@ -90,7 +90,9 @@ int main
   rdrctx = ctx->rdrctx;
   smartcard_command_length = 0;
 
-  fprintf(stderr, "obtest PKOC tester %s\n", OPENBADGER_VERSION);
+  fprintf(stderr, "obtest PKOC tester %s\n", OPENPKOC_VERSION);
+// OPENBADGER_VERSION
+
   fprintf(stderr, "Reader %d.\n", ctx->reader_index);
   fprintf(stderr, "PD Control %s Verbosity %d.\n", ctx->pd_control, ctx->verbosity);
 
