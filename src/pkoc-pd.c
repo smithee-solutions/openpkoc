@@ -4,20 +4,52 @@ pd side stuff, anything that can be done on a command line.
 also has a settings file, openbadger filename style
 
 openbadger-settings.json
+
+
+---
+
+send osdp_PKOC_CARD_PRESENT mfg response (because card is present.)
+
 #endif
+
+/*
+  Usage:
+
+  --error <tlv string>
+  --response-raw
+  --verbosity <level)
+  --help
+
+Example:
+
+  pkoc-pd --verbosity 9 --error FD03019000
+    sends TLV string as an MFG response
+*/
+
 
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
 
-// OSDP parameters
+
+#define EQUALS ==
+
+// OSDP protocol parameters
 
 #define OSDP_RAW_FORMAT_PRIVATE (0x80)
 
-// spec parameters
 
-#define PKOC_TAG_ERROR_7816 (0x7F)
+// PKOC OSDP spec parameters
+
+#define PKOC_TAG_ERROR_7816    (0x7F)
 #define PKOC_TAG_ERROR_GENERAL (0x7E)
+
+// program option settings
+
+#define PKOC_CARD_PRESENT_MFG (0)
+#define PKOC_CARD_PRESENT_RAW (1)
+
+
 typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
 {
   unsigned char format_code;
@@ -25,10 +57,6 @@ typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
   unsigned char bits_msb;
   unsigned char data [1024];
 } PKOC_RAW_CARD_PRESENT_PAYLOAD;
-
-
-#define PKOC_CARD_PRESENT_MFG (0)
-#define PKOC_CARD_PRESENT_RAW (1)
 
 typedef struct pkoc_context
 {
@@ -57,7 +85,7 @@ no-reader-id
 no-transaction-id
 settings
 #endif
-#define EQUALS ==
+
 #define ST_OK (  0)
 
 void bytes_to_hex(unsigned char *raw, int length, char *byte_string);
@@ -79,7 +107,6 @@ struct option longopts [] = {
       {0, 0, 0, 0}};
 
 char optstring [1024];
-
 
 void bytes_to_hex
   (unsigned char *raw,
@@ -163,6 +190,8 @@ int main
 ctx->verbosity = 9;
   ctx->log = stderr;
   ctx->console = stdout;
+  ctx->card_present_method = PKOC_CARD_PRESENT_MFG;
+
   if (status EQUALS ST_OK)
   {
     done = 0;
@@ -191,7 +220,7 @@ fprintf(stderr, "DEBUG: range check bits\n");
 
       case OBPKOCOPT_ERROR:
         found_something = 1;
-        strcpy(ctx->error_tlv_hex, optstring);
+        strcpy(ctx->error_tlv_hex, optarg);
         break;
 
       case OBPKOCOPT_HELP:
@@ -208,6 +237,9 @@ fprintf(stderr, "DEBUG: range check bits\n");
         found_something = 1;
         sscanf(optstring, "%d", &i);
         ctx->verbosity = i;
+        break;
+
+      case OBPKOCOPT_NOOP:
         break;
 
       default:
