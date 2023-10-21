@@ -6,30 +6,41 @@ also has a settings file, openbadger filename style
 openbadger-settings.json
 
 
----
-
-send osdp_PKOC_CARD_PRESENT mfg response (because card is present.)
-
+osdp_MFGREP called 00 {"1":"00","2":"0A0017","3":"E0","4":"fd03019000"}
+second arg is json string
+tag 2 is OUI
+tag 3 is command
+tag 4 is payload
 #endif
 
 /*
   Usage:
 
-  --error <tlv string>
+  --error <tlv string> - sends error response
+  --mfgrep <value arg from ACU action call-out
   --response-raw
   --verbosity <level)
   --help
 
-Example:
+Examples:
 
-  pkoc-pd --verbosity 9 --error FD03019000
-    sends TLV string as an MFG response
+  pkoc-pd --error FD03019000
+    sends TLV string as an MFG error response
+
+  pkoc-pd --card-present FC065C0201004C00
+    sends card-present as an MFG card present response
+
 */
 
 
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include <jansson.h>
+
+#include <ob-stub-include.h>
 
 
 #define EQUALS ==
@@ -38,11 +49,12 @@ Example:
 
 #define OSDP_RAW_FORMAT_PRIVATE (0x80)
 
-
 // PKOC OSDP spec parameters
 
 #define PKOC_TAG_ERROR_7816    (0x7F)
 #define PKOC_TAG_ERROR_GENERAL (0x7E)
+#define OSDP_MFGREP_PKOC_CARD_PRESENT (0xE0)
+#define OSDP_MFGREP_PKOC_READER_ERROR (0xFE)
 
 // program option settings
 
@@ -68,18 +80,21 @@ typedef struct pkoc_context
   int bits;
   char error_tlv_hex [1024];
   int card_present_method;
+  int request_response_voice; // 0=request
+  unsigned char oui [3];
 } PKOC_CONTEXT;
 
 
 #define OBPKOCOPT_HELP         (  1)
-#define OBPKOCOPT_VERBOSITY (  2)
-#define OBPKOCOPT_NOOP      (  3)
-#define OBPKOCOPT_BITS      (  4)
+#define OBPKOCOPT_VERBOSITY    (  2)
+#define OBPKOCOPT_NOOP         (  3)
+#define OBPKOCOPT_BITS         (  4)
 #define OBPKOCOPT_CONTROL_PORT (  5)
 #define OBPKOCOPT_CARD_VERSION (  6)
 #define OBPKOCOPT_ERROR        (  7)
 #define OBPKOCOPT_RESPONSE_RAW (  8)
 #define OBPKOCOPT_OUI          (  9)
+#define OBPKOCOPT_MFGREP       ( 10)
 #if 0
 no-reader-id
 no-transaction-id
@@ -90,8 +105,11 @@ settings
 
 void bytes_to_hex(unsigned char *raw, int length, char *byte_string);
 int hex_to_binary(PKOC_CONTEXT *ctx, char *hex, unsigned char *binary, int *length);
-int osdp_send_response_RAW(PKOC_CONTEXT *ctx, PKOC_RAW_CARD_PRESENT_PAYLOAD *raw);
+int osdp_send_response_MFG(PKOC_CONTEXT *ctx, unsigned char mfg_response_code, unsigned char * mfg_response_payload, int lth);
+int osdp_send_response_RAW(PKOC_CONTEXT *ctx, PKOC_RAW_CARD_PRESENT_PAYLOAD *raw, int lth);
+void osdp_submit_command(PKOC_CONTEXT *ctx, char *command);
 int pkoc_help(PKOC_CONTEXT *ctx);
+int pkoc_read_settings(PKOC_CONTEXT *ctx);
 
 PKOC_CONTEXT pkoc_context;
 
@@ -101,6 +119,7 @@ struct option longopts [] = {
       {"control-port", required_argument, &pkoc_context.option, OBPKOCOPT_CONTROL_PORT},
       {"error", required_argument, &pkoc_context.option, OBPKOCOPT_ERROR},
       {"help", 0, &pkoc_context.option, OBPKOCOPT_HELP},
+      {"mfgrep", required_argument, &pkoc_context.option, OBPKOCOPT_MFGREP},
       {"OUI", required_argument, &pkoc_context.option, OBPKOCOPT_OUI},
       {"response-raw", 0, &pkoc_context.option, OBPKOCOPT_RESPONSE_RAW},
       {"verbosity", required_argument, &pkoc_context.option, OBPKOCOPT_VERBOSITY},
@@ -122,7 +141,8 @@ void bytes_to_hex
   for (i=0; i<length; i++)
   {
     sprintf(p, "%02X", *(raw+i));
-    p++;
+    p = p + 2;
+fprintf(stderr, "DEBUG: bytes as hex (%d.) %s\n", length, byte_string);
   };
 
 } /* bytes_to_hex */
@@ -160,6 +180,7 @@ int hex_to_binary
     pbinary++;
     p = p + 2;
     count = count - 2;
+    (*length)++;
   };
 
   return(ST_OK);
@@ -176,11 +197,14 @@ int main
   unsigned char card_present_payload [1024];
   int card_present_payload_length;
   PKOC_CONTEXT *ctx;
+  json_t *details_root;
   int done;
   int found_something;
   int i;
+  char mfgrep_details [1024];
   PKOC_RAW_CARD_PRESENT_PAYLOAD response_raw;
   int status;
+  json_error_t status_json;
   int status_opt;
 
 
@@ -191,6 +215,7 @@ ctx->verbosity = 9;
   ctx->log = stderr;
   ctx->console = stdout;
   ctx->card_present_method = PKOC_CARD_PRESENT_MFG;
+  status = pkoc_read_settings(ctx);
 
   if (status EQUALS ST_OK)
   {
@@ -219,13 +244,22 @@ fprintf(stderr, "DEBUG: range check bits\n");
         break;
 
       case OBPKOCOPT_ERROR:
+
+        // command line directs sending an MFGREP.
+        ctx->request_response_voice = 1;
         found_something = 1;
         strcpy(ctx->error_tlv_hex, optarg);
+
         break;
 
       case OBPKOCOPT_HELP:
         found_something = 1;
         status = pkoc_help(ctx);
+        break;
+
+      case OBPKOCOPT_MFGREP:
+        found_something = 1;
+        strcpy(mfgrep_details, optarg);
         break;
 
       case OBPKOCOPT_RESPONSE_RAW:
@@ -255,6 +289,9 @@ fprintf(stderr, "DEBUG: range check bits\n");
 
   if (status EQUALS ST_OK)
   {
+
+    // if --error then send error resposne
+
     if (strlen(ctx->error_tlv_hex) > 0)
     {
       memset(&response_raw, 0, sizeof(response_raw));
@@ -262,13 +299,73 @@ fprintf(stderr, "DEBUG: range check bits\n");
       response_raw.format_code = OSDP_RAW_FORMAT_PRIVATE;
       response_raw.bits_lsb = (card_present_payload_length*8) & 0xff;
       response_raw.bits_msb = ((card_present_payload_length*8) & 0xff00) >> 8;
-      memcpy(response_raw.data, card_present_payload, sizeof(card_present_payload));
+      memcpy(response_raw.data, card_present_payload, card_present_payload_length);
       if (status EQUALS 0)
       {
         if (ctx->card_present_method EQUALS PKOC_CARD_PRESENT_RAW)
-          status = osdp_send_response_RAW(ctx, &response_raw);
+          status = osdp_send_response_RAW(ctx, &response_raw, card_present_payload_length);
         else
-fprintf(stderr, "DEBUG: also send as mfg\n");
+          status = osdp_send_response_MFG(ctx, OSDP_MFGREP_PKOC_CARD_PRESENT, card_present_payload, card_present_payload_length);
+      };
+    };
+
+    // if mfgrep details then we are being called as the MFGREP action routine
+
+    if (strlen(mfgrep_details) > 0)
+    {
+      int mfgrep_command;
+      char mfgrep_command_string [1024];
+      char octet [3];
+      char pkoc_reader_error_payload [1024];
+      int process; 
+      unsigned char requested_oui [3];
+      char requested_oui_string [1024];
+      json_t *value;
+
+      process = 0;
+      details_root = json_loads(mfgrep_details, 0, &status_json);
+      if (details_root != NULL)
+      {
+        memset(requested_oui_string, 0, sizeof(requested_oui_string));
+        value = json_object_get(details_root, "2");
+        if (json_string_value(value))
+          strcpy(requested_oui_string, json_string_value(value));
+
+        octet[2] = 0;
+        memcpy(octet, requested_oui_string+0, 2);
+        sscanf(octet, "%x", &i);
+        requested_oui [0] = i;
+        memcpy(octet, requested_oui_string+2, 2);
+        sscanf(octet, "%x", &i);
+        requested_oui [1] = i;
+        memcpy(octet, requested_oui_string+4, 2);
+        sscanf(octet, "%x", &i);
+        requested_oui [2] = i;
+        if (0 EQUALS memcmp(requested_oui, ctx->oui, 3))
+          process = 1;
+        if (process)
+        {
+          mfgrep_command_string [0] = 0;
+          value = json_object_get(details_root, "3");
+          if (json_string_value(value))
+            strcpy(mfgrep_command_string, json_string_value(value));
+          sscanf(mfgrep_command_string, "%x", &mfgrep_command); 
+
+          switch(mfgrep_command)
+          {
+          default:
+            fprintf(stderr, "Unknown MFGREP command (%02X)\n", mfgrep_command);
+            status = -1;
+            break;
+          case OSDP_MFGREP_PKOC_READER_ERROR:
+            pkoc_reader_error_payload [0] = 0;
+            value = json_object_get(details_root, "4");
+            if (json_string_value(value))
+              strcpy(pkoc_reader_error_payload, json_string_value(value));
+            fprintf(stderr, "PKOC: Reader Error - %s\n", pkoc_reader_error_payload);
+            break;
+          };
+        };
       };
     };
   };
@@ -283,26 +380,81 @@ fprintf(stderr, "DEBUG: also send as mfg\n");
 } /* main for pkoc-pd */
 
 
+int osdp_send_response_MFG
+  (PKOC_CONTEXT *ctx,
+  unsigned char mfg_response_code,
+  unsigned char *payload,
+  int lth)
+
+{ /* osdp_send_response_MFG */
+
+  char byte_string [1024];
+  char command [1024];
+  int status;
+
+  status = ST_OK;
+  strcpy(byte_string, "00");
+  bytes_to_hex((unsigned char *)payload, lth, byte_string);
+  sprintf(command, 
+"{\\\"command\\\":\\\"mfg-response\\\",\\\"response-id\\\":\\\"%X\\\",\\\"response-specific-data\\\":\\\"%s\\\"}",
+    mfg_response_code, byte_string);
+  if (strlen(ctx->control_port) EQUALS 0)
+  {
+    strcpy(ctx->control_port, "/opt/osdp-conformance/run/PD/open-osdp-control");
+    if (ctx->verbosity > 3)
+      fprintf(stderr, "MFGREP so assuming standard PD\n");
+  };
+  osdp_submit_command(ctx, command);
+  return(status);
+
+} /* osdp_send_response_MFG */
+
+
 int osdp_send_response_RAW
   (PKOC_CONTEXT *ctx,
-  PKOC_RAW_CARD_PRESENT_PAYLOAD *raw)
+  PKOC_RAW_CARD_PRESENT_PAYLOAD *raw,
+  int lth)
 
 { /* osdp_send_response_RAW */
 
   int bits;
   char byte_string [1024];
   char command [1024];
+  int status;
 
 
+  status = ST_OK;
+fprintf(stderr, "DEBUG: use lth to calc size of response %d\n", lth);
   bytes_to_hex((unsigned char *)raw, sizeof(raw), byte_string);
   bits = sizeof((unsigned char *)raw) * 8;
   sprintf(command, 
-"{\"command\":\"present-card\", \"bits\":\"%d\", \"format\":\"80\", \"data\":\"%s\"}\n",
+"{\"command\":\"present-card\",\"bits\":\"%d\",\"format\":\"80\",\"data\":\"%s\"}",
     bits, byte_string);
+  osdp_submit_command(ctx, command);
 
-  return(ST_OK);
+  return(status);
 
 } /* osdp_send_response_RAW */
+
+
+void osdp_submit_command
+  (PKOC_CONTEXT *ctx,
+  char *command)
+
+{ /* osdp_submit_command */
+
+  char control_port [1024];
+  char submission_command [2048];
+
+  strcpy(control_port, " ");
+  if (strlen(ctx->control_port) > 0)
+    strcpy(control_port, ctx->control_port);
+  sprintf(submission_command, "/opt/tester/bin/submit-osdp-command \"%s\" %s", command, control_port);
+  if (ctx->verbosity > 3)
+    fprintf(stderr, "DEBUG: control port %s\n  command %s\n", control_port, command);
+  system(submission_command);
+
+} /* osdp_submit_command */
 
 
 int pkoc_help
@@ -323,4 +475,14 @@ int pkoc_help
   return(ST_OK);
 
 } /* pkoc_help */
+
+int pkoc_read_settings
+  (PKOC_CONTEXT *ctx)
+
+{
+  unsigned char oui [] = {0x0A, 0x00, 0x17};
+
+  memcpy(ctx->oui, oui, sizeof(oui));
+  return(ST_OK);
+}
 

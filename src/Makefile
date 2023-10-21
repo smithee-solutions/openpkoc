@@ -4,11 +4,11 @@
 
 # PCSC is included because their own includes get it wrong
 
-PROGS=obtest-pkoc pkoc-pd
+PROGS=obtest-pkoc pkoc-osdp
 
 CC=clang
 CFLAGS= -D OPENPKOC_VERSION=\"1.23\" \
-  -c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -Wall -Werror
+  -c -g -I../include -I/opt/tester/include -I/usr/include/PCSC -Wall -Werror
 #CFLAGS=-c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -I../openbadger -Wall -Werror
 LINK=clang
 LDFLAGS=-g /opt/tester/lib/libopenbadger.a -ljansson -lpcsclite 
@@ -32,9 +32,9 @@ obtest-pkoc.o:	obtest-pkoc.c \
 	../include/ob-pkoc.h
 	${CC} ${CFLAGS} -DALLOCATE_SELECT obtest-pkoc.c
 
-pkoc-pd:	pkoc-pd.o Makefile
-	${LINK} -o pkoc-pd pkoc-pd.o ${LDFLAGS}
+pkoc-osdp:	pkoc-osdp.o Makefile
+	${LINK} -o pkoc-osdp pkoc-osdp.o ${LDFLAGS}
 
-pkoc-pd.o:	pkoc-pd.c
-	${CC} ${CFLAGS} pkoc-pd.c
+pkoc-osdp.o:	pkoc-osdp.c
+	${CC} ${CFLAGS} pkoc-osdp.c
 
