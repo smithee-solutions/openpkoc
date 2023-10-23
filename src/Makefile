@@ -25,6 +25,9 @@ ob-pkoc.o:	ob-pkoc.c \
 	../include/ob-pkoc.h
 	${CC} ${CFLAGS} ob-pkoc.c
 
+ob-pkoc-commandline.o:	ob-pkoc-commandline.c
+	${CC} ${CFLAGS} ob-pkoc-commandline.c
+
 ob-settings.o:	ob-settings.c
 	${CC} ${CFLAGS} ob-settings.c
 
@@ -32,8 +35,8 @@ obtest-pkoc.o:	obtest-pkoc.c \
 	../include/ob-pkoc.h
 	${CC} ${CFLAGS} -DALLOCATE_SELECT obtest-pkoc.c
 
-pkoc-osdp:	pkoc-osdp.o Makefile
-	${LINK} -o pkoc-osdp pkoc-osdp.o ${LDFLAGS}
+pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
+	${LINK} -o pkoc-osdp pkoc-osdp.o ob-pkoc-commandline.o ${LDFLAGS}
 
 pkoc-osdp.o:	pkoc-osdp.c
 	${CC} ${CFLAGS} pkoc-osdp.c

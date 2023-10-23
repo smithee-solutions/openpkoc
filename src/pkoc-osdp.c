@@ -1,4 +1,9 @@
 #if 0
+no-reader-id
+no-transaction-id
+settings
+#endif
+#if 0
 pd side stuff, anything that can be done on a command line.
 
 also has a settings file, openbadger filename style
@@ -18,6 +23,7 @@ tag 4 is payload
 
   --error <tlv string> - sends error response
   --mfgrep <value arg from ACU action call-out
+  --next-transaction <tlv>
   --response-raw
   --verbosity <level)
   --help
@@ -43,25 +49,6 @@ Examples:
 #include <ob-stub-include.h>
 
 
-#define EQUALS ==
-
-// OSDP protocol parameters
-
-#define OSDP_RAW_FORMAT_PRIVATE (0x80)
-
-// PKOC OSDP spec parameters
-
-#define PKOC_TAG_ERROR_7816    (0x7F)
-#define PKOC_TAG_ERROR_GENERAL (0x7E)
-#define OSDP_MFGREP_PKOC_CARD_PRESENT (0xE0)
-#define OSDP_MFGREP_PKOC_READER_ERROR (0xFE)
-
-// program option settings
-
-#define PKOC_CARD_PRESENT_MFG (0)
-#define PKOC_CARD_PRESENT_RAW (1)
-
-
 typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
 {
   unsigned char format_code;
@@ -70,62 +57,15 @@ typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
   unsigned char data [1024];
 } PKOC_RAW_CARD_PRESENT_PAYLOAD;
 
-typedef struct pkoc_context
-{
-  int option;
-  int verbosity;
-  FILE *log;
-  FILE *console;
-  char control_port [1024];
-  int bits;
-  char error_tlv_hex [1024];
-  int card_present_method;
-  int request_response_voice; // 0=request
-  unsigned char oui [3];
-} PKOC_CONTEXT;
-
-
-#define OBPKOCOPT_HELP         (  1)
-#define OBPKOCOPT_VERBOSITY    (  2)
-#define OBPKOCOPT_NOOP         (  3)
-#define OBPKOCOPT_BITS         (  4)
-#define OBPKOCOPT_CONTROL_PORT (  5)
-#define OBPKOCOPT_CARD_VERSION (  6)
-#define OBPKOCOPT_ERROR        (  7)
-#define OBPKOCOPT_RESPONSE_RAW (  8)
-#define OBPKOCOPT_OUI          (  9)
-#define OBPKOCOPT_MFGREP       ( 10)
-#if 0
-no-reader-id
-no-transaction-id
-settings
-#endif
-
-#define ST_OK (  0)
 
 void bytes_to_hex(unsigned char *raw, int length, char *byte_string);
 int hex_to_binary(PKOC_CONTEXT *ctx, char *hex, unsigned char *binary, int *length);
 int osdp_send_response_MFG(PKOC_CONTEXT *ctx, unsigned char mfg_response_code, unsigned char * mfg_response_payload, int lth);
 int osdp_send_response_RAW(PKOC_CONTEXT *ctx, PKOC_RAW_CARD_PRESENT_PAYLOAD *raw, int lth);
 void osdp_submit_command(PKOC_CONTEXT *ctx, char *command);
-int pkoc_help(PKOC_CONTEXT *ctx);
 int pkoc_read_settings(PKOC_CONTEXT *ctx);
 
 PKOC_CONTEXT pkoc_context;
-
-struct option longopts [] = {
-      {"bits", required_argument, &pkoc_context.option, OBPKOCOPT_BITS},
-      {"card-version", required_argument, &pkoc_context.option, OBPKOCOPT_CARD_VERSION},
-      {"control-port", required_argument, &pkoc_context.option, OBPKOCOPT_CONTROL_PORT},
-      {"error", required_argument, &pkoc_context.option, OBPKOCOPT_ERROR},
-      {"help", 0, &pkoc_context.option, OBPKOCOPT_HELP},
-      {"mfgrep", required_argument, &pkoc_context.option, OBPKOCOPT_MFGREP},
-      {"OUI", required_argument, &pkoc_context.option, OBPKOCOPT_OUI},
-      {"response-raw", 0, &pkoc_context.option, OBPKOCOPT_RESPONSE_RAW},
-      {"verbosity", required_argument, &pkoc_context.option, OBPKOCOPT_VERBOSITY},
-      {0, 0, 0, 0}};
-
-char optstring [1024];
 
 void bytes_to_hex
   (unsigned char *raw,
@@ -196,16 +136,14 @@ int main
 
   unsigned char card_present_payload [1024];
   int card_present_payload_length;
+  char command [1024];
   PKOC_CONTEXT *ctx;
   json_t *details_root;
-  int done;
-  int found_something;
   int i;
   char mfgrep_details [1024];
   PKOC_RAW_CARD_PRESENT_PAYLOAD response_raw;
   int status;
   json_error_t status_json;
-  int status_opt;
 
 
   status = ST_OK;
@@ -216,81 +154,15 @@ ctx->verbosity = 9;
   ctx->console = stdout;
   ctx->card_present_method = PKOC_CARD_PRESENT_MFG;
   status = pkoc_read_settings(ctx);
-
   if (status EQUALS ST_OK)
-  {
-    done = 0;
-    while (!done)
-    {
-      ctx->option = OBPKOCOPT_NOOP;
-      status_opt = getopt_long (argc, argv, optstring, longopts, NULL);
-      if (status_opt EQUALS -1)
-        if (!found_something)
-          ctx->option = OBPKOCOPT_HELP;  // found nothing and/or end of list so give help
-      if (ctx->verbosity > 9)
-        fprintf (ctx->log, "option %2d\n", ctx->option);
-      switch (ctx->option)
-      {
-      case OBPKOCOPT_BITS:
-        found_something = 1;
-        sscanf(optstring, "%d", &i);
-        ctx->bits = i;
-fprintf(stderr, "DEBUG: range check bits\n");
-        break;
-
-      case OBPKOCOPT_CONTROL_PORT:
-        found_something = 1;
-        strcpy(ctx->control_port, optstring);
-        break;
-
-      case OBPKOCOPT_ERROR:
-
-        // command line directs sending an MFGREP.
-        ctx->request_response_voice = 1;
-        found_something = 1;
-        strcpy(ctx->error_tlv_hex, optarg);
-
-        break;
-
-      case OBPKOCOPT_HELP:
-        found_something = 1;
-        status = pkoc_help(ctx);
-        break;
-
-      case OBPKOCOPT_MFGREP:
-        found_something = 1;
-        strcpy(mfgrep_details, optarg);
-        break;
-
-      case OBPKOCOPT_RESPONSE_RAW:
-        found_something = 1;
-        ctx->card_present_method = PKOC_CARD_PRESENT_RAW;
-        break;
-
-      case OBPKOCOPT_VERBOSITY:
-        found_something = 1;
-        sscanf(optstring, "%d", &i);
-        ctx->verbosity = i;
-        break;
-
-      case OBPKOCOPT_NOOP:
-        break;
-
-      default:
-        fprintf(stderr, "OPTION NOT IMPLEMENTED %d\n", ctx->option);
-        break;
-      };
-      if (status_opt EQUALS -1)
-        done = 1;
-    };
-  };
+    status = ob_pkoc_commandline(ctx, argc, argv);
 
   // process options
 
   if (status EQUALS ST_OK)
   {
 
-    // if --error then send error resposne
+    // if --error then send error response
 
     if (strlen(ctx->error_tlv_hex) > 0)
     {
@@ -372,6 +244,14 @@ fprintf(stderr, "DEBUG: range check bits\n");
           };
         };
       };
+    };
+
+    if (strlen(ctx->next_transaction_details) > 0)
+    {
+      sprintf(command, 
+"{\\\"command\\\":\\\"mfg\\\",\\\"request-id\\\":\\\"%X\\\",\\\"request-specific-data\\\":\\\"%s\\\"}",
+        OSDP_MFG_PKOC_NEXT_TRANSACTION, ctx->next_transaction_details);
+      osdp_submit_command(ctx, command);
     };
   };
 
@@ -461,27 +341,6 @@ void osdp_submit_command
 
 } /* osdp_submit_command */
 
-
-int pkoc_help
-  (PKOC_CONTEXT *ctx)
-
-{ /* pkoc_help */
-
-  fprintf(ctx->log, "Usage:\n");
-  fprintf(ctx->log, "  pkoc-pd <switches>\n");
-  fprintf(ctx->log, "  --bits - number of bits in response\n");
-  fprintf(ctx->log, "  --card-version - card version TLV to return to ACU (in hex)\n");
-  fprintf(ctx->log, "  --control-port - path of libosdp-conformance control port (default /opt/osdp-conformance/run/PD/osdp-control-port)\n");
-  fprintf(ctx->log, "  --error <error TLV>\n");
-  fprintf(ctx->log, "  --help - this message\n");
-  fprintf(ctx->log, "  --mfgrep <value arg from ACU action call-out>\n");
-  fprintf(ctx->log, "  --OUI - organizational unit indicator to be used in MFG commands and responses\n");
-  fprintf(ctx->log, "  --response-raw - use osdp_RAW response for card present.\n");
-  fprintf(ctx->log, "  --verbosity - logging level.  0=none, 3=normal, 9=debug.  Default is 3.\n");
-
-  return(ST_OK);
-
-} /* pkoc_help */
 
 int pkoc_read_settings
   (PKOC_CONTEXT *ctx)
