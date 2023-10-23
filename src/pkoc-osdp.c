@@ -305,7 +305,7 @@ fprintf(stderr, "DEBUG: range check bits\n");
         if (ctx->card_present_method EQUALS PKOC_CARD_PRESENT_RAW)
           status = osdp_send_response_RAW(ctx, &response_raw, card_present_payload_length);
         else
-          status = osdp_send_response_MFG(ctx, OSDP_MFGREP_PKOC_CARD_PRESENT, card_present_payload, card_present_payload_length);
+          status = osdp_send_response_MFG(ctx, OSDP_MFGREP_PKOC_READER_ERROR, card_present_payload, card_present_payload_length);
       };
     };
 
@@ -323,7 +323,12 @@ fprintf(stderr, "DEBUG: range check bits\n");
       json_t *value;
 
       process = 0;
-      details_root = json_loads(mfgrep_details, 0, &status_json);
+      if (mfgrep_details [0] EQUALS '@')
+        details_root = json_load_file(mfgrep_details+1, 0, &status_json);
+      else
+        details_root = json_loads(mfgrep_details, 0, &status_json);
+      if (details_root EQUALS NULL)
+        fprintf(stderr, "payload parse error\n");
       if (details_root != NULL)
       {
         memset(requested_oui_string, 0, sizeof(requested_oui_string));
@@ -467,7 +472,9 @@ int pkoc_help
   fprintf(ctx->log, "  --bits - number of bits in response\n");
   fprintf(ctx->log, "  --card-version - card version TLV to return to ACU (in hex)\n");
   fprintf(ctx->log, "  --control-port - path of libosdp-conformance control port (default /opt/osdp-conformance/run/PD/osdp-control-port)\n");
+  fprintf(ctx->log, "  --error <error TLV>\n");
   fprintf(ctx->log, "  --help - this message\n");
+  fprintf(ctx->log, "  --mfgrep <value arg from ACU action call-out>\n");
   fprintf(ctx->log, "  --OUI - organizational unit indicator to be used in MFG commands and responses\n");
   fprintf(ctx->log, "  --response-raw - use osdp_RAW response for card present.\n");
   fprintf(ctx->log, "  --verbosity - logging level.  0=none, 3=normal, 9=debug.  Default is 3.\n");
