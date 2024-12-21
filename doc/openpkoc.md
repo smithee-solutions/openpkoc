@@ -1,3 +1,8 @@
+---
+title: openpkoc
+subtitle: A PKOC (NFC) Card Reader add-on for libosdp-conformance
+---
+
 operating manual for obtest-pkoc
 
 Usage:
@@ -21,4 +26,17 @@ Typical oenbadger-settings.json
   "reader"    : "1",
   "verbosity" :"3"
 }
+
+
+# Building openpkoc #
+
+- build openbadger-dev
+
+```
+  make
+```
+
+# Punchlist #
+
+- package
 
