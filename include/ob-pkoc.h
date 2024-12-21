@@ -55,5 +55,5 @@ unsigned char SELECT_PKOC [] =
 extern unsigned char SELECT_PKOC [];
 #endif
 
-int ob_validate_select_response(OB_CONTEXT *ctx, unsigned char *response, int response_length);
+int ob_validate_select_response(OB_CONTEXT *ctx, OB_PKOC_CONTEXT *pkoc_ctx, unsigned char *response, int response_length);
 

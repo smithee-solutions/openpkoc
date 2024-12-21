@@ -1,0 +1,2 @@
+#define OPENPKOC_VERSION "1.30"
+

@@ -34,22 +34,19 @@
 
 int ob_validate_select_response
   (OB_CONTEXT *ctx,
+  OB_PKOC_CONTEXT *pkoc_ctx,
   unsigned char *response,
   int response_length)
 
 { /* ob_validate_select_response */
 
   unsigned char *p;
-  OB_PKOC_CONTEXT *pkoc_ctx;
   int prot_ver_lth;
   int remainder;
   int status;
 
 
   status = ST_OK;
-  pkoc_ctx = ctx->pkoc_ctx;
-  if (ctx->test_case != OB_TEST_PKOC)
-    status = STOB_WRONG_TEST_CASE;
 
   if (status EQUALS ST_OK)
   {

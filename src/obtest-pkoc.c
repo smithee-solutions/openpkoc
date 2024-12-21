@@ -43,7 +43,7 @@ unsigned char spec_identifier [] = {
 #include <openbadger-common.h>
 #include <ob-7816.h>
 #include <ob-pcsc.h>
-#include <openbadger-version.h>
+#include <openpkoc-version.h>
 #include <ob-pkoc.h>
 #define OBTEST_PKOC_PUBLIC_KEY "ec-public-key.der"
 int ob_read_settings(OB_CONTEXT *ctx);
@@ -81,9 +81,7 @@ int main
 
   ctx = &test_pkoc_context;
   memset(ctx, 0, sizeof(*ctx));
-  ctx->test_case = OB_TEST_PKOC;
   ctx->rdrctx = &pcsc_reader_context;
-  ctx->pkoc_ctx = &pkoc_context;
 
   status = ob_read_settings(ctx);
 
@@ -98,24 +96,8 @@ int main
 
   status = ob_init_smartcard(ctx);
 
-  // test cases: 1: test vectors, 2: PIV, 3: PKOC
-
-  if (status EQUALS ST_OK)
-  {
-    switch(ctx->test_case)
-    {
-    case OB_TEST_VECTORS:
-      fprintf(stderr, "Test vectors in use, no command sent.\n");
-      break;
-    case OB_TEST_PKOC:
       memcpy(smartcard_command, SELECT_PKOC, sizeof(SELECT_PKOC));
       smartcard_command_length = sizeof(SELECT_PKOC);
-      break;
-    default:
-      status= STOB_UNKNOWN_TEST_CASE;
-      break;
-    };
-  };
 
   if (ctx->verbosity > 3)
   {
@@ -137,7 +119,7 @@ int main
       ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
     };
 
-    status = ob_validate_select_response(ctx, pbRecvBuffer, dwRecvLength);
+    status = ob_validate_select_response(ctx, &pkoc_context, pbRecvBuffer, dwRecvLength);
   };
 
   if (status EQUALS ST_OK)
@@ -244,7 +226,7 @@ int main
       p++;
       remainder--;
 
-      memcpy(ctx->ec_public_key, p, payload_size);
+      memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
@@ -256,7 +238,7 @@ int main
       p++;
       remainder--;
 
-      memcpy(ctx->pkoc_signature, p, payload_size);
+      memcpy(pkoc_context.pkoc_signature, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
@@ -268,24 +250,24 @@ int main
       p++;
       remainder--;
 
-      memcpy(ctx->ec_public_key, p, payload_size);
+      memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
     fprintf(stderr, "Public Key:\n");
-    ob_dump_buffer (ctx, ctx->ec_public_key, OB_PKOC_PUBKEY_LENGTH, 0);
+    ob_dump_buffer (ctx, pkoc_context.ec_public_key, OB_PKOC_PUBKEY_LENGTH, 0);
     fprintf(stderr, "Signature:\n");
-    ob_dump_buffer (ctx, ctx->pkoc_signature, 64, 0);
+    ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 0);
 
     // output a DER-formatted copy of the public key.
-    status = ob_initialize_pubkey_DER(ctx, ctx->ec_public_key, OB_PKOC_PUBKEY_LENGTH);
+    status = ob_initialize_pubkey_DER(ctx, pkoc_context.ec_public_key, OB_PKOC_PUBKEY_LENGTH);
     if (status EQUALS ST_OK)
       fprintf(stderr, "file %s created\n", OBTEST_PKOC_PUBLIC_KEY);
   };
   if (status EQUALS ST_OK)
   {
     // output a DER-formatted copy of the signature.
-    status = ob_initialize_signature_DER(ctx, ctx->pkoc_signature, 32, ctx->pkoc_signature+32, 32);
+    status = ob_initialize_signature_DER(ctx, pkoc_context.pkoc_signature, 32, pkoc_context.pkoc_signature+32, 32);
     if (status EQUALS ST_OK)
       fprintf(stderr, "file ec-sig.der created\n");
   };
@@ -326,12 +308,12 @@ int main
     memset(raw_key, 0, sizeof(raw_key));
     if (ctx->bits_to_return EQUALS 128)
     {
-      memcpy(raw_key, ctx->ec_public_key+16, 128/8);
+      memcpy(raw_key, pkoc_context.ec_public_key+16, 128/8);
       return_size = 128/8;
     }
     else
     {
-      memcpy(raw_key, ctx->ec_public_key, sizeof(raw_key));
+      memcpy(raw_key, pkoc_context.ec_public_key, sizeof(raw_key));
       return_size = 64;
     }
 
