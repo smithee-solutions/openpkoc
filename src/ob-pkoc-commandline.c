@@ -5,7 +5,8 @@
 
 #include <jansson.h>
 
-#include <ob-stub-include.h>
+#include <openbadger-common.h>
+#include <ob-pkoc.h>
 
 
 #define OBPKOCOPT_HELP         (  1)

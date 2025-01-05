@@ -69,7 +69,7 @@ int main
   unsigned char msg_le;
   BYTE pbRecvBuffer [2*OB_7816_APDU_PAYLOAD_MAX];
   OB_RDRCTX pcsc_reader_context;
-  OB_PKOC_CONTEXT pkoc_context;
+  PKOC_CONTEXT pkoc_context;
   OB_RDRCTX *rdrctx;
   unsigned char smartcard_command [OB_7816_BUFFER_MAX];
   int smartcard_command_length;

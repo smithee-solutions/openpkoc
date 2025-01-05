@@ -1,11 +1,13 @@
-# openpkoc - Make file for this "plug-in" only
-
-# (C)2023 Smithee Solutions LLC
+# (C)2023-2025 Smithee Solutions LLC
 
 all:
+	echo Configured for crypto subsytem cyclone
+	cp include/ob-crypto_cyclone.h include/ob-crypto.h
 	(cd src; make)
 
 clean:
+	echo Configured for crypto subsytem cyclone
+	rm -f include/ob-crypto.h
 	(cd src; make clean)
-	rm -f opt
+	rm -rf opt
 

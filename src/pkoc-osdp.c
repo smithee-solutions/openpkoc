@@ -46,7 +46,8 @@ Examples:
 
 #include <jansson.h>
 
-#include <ob-stub-include.h>
+#include <openbadger-common.h>
+#include <ob-pkoc.h>
 
 
 typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
@@ -59,7 +60,6 @@ typedef struct __attribute__((packed)) pkoc_raw_card_present_payload
 
 
 void bytes_to_hex(unsigned char *raw, int length, char *byte_string);
-int hex_to_binary(PKOC_CONTEXT *ctx, char *hex, unsigned char *binary, int *length);
 int osdp_send_response_MFG(PKOC_CONTEXT *ctx, unsigned char mfg_response_code, unsigned char * mfg_response_payload, int lth);
 int osdp_send_response_RAW(PKOC_CONTEXT *ctx, PKOC_RAW_CARD_PRESENT_PAYLOAD *raw, int lth);
 void osdp_submit_command(PKOC_CONTEXT *ctx, char *command);
@@ -88,46 +88,6 @@ fprintf(stderr, "DEBUG: bytes as hex (%d.) %s\n", length, byte_string);
 } /* bytes_to_hex */
 
 
-int hex_to_binary
-  (PKOC_CONTEXT *ctx,
-  char *hex,
-  unsigned char *binary,
-  int *length)
-
-{ /* hex_to_binary */
-
-  int count;
-  int hexit;
-  char octet_string [3];
-  char *p;
-  unsigned char *pbinary;
-
-
-  p = hex;
-  pbinary = binary;
-  count = strlen(hex);
-  if ((count % 2) != 0)
-  {
-    count = count - 1;
-    fprintf(ctx->log, "trimming hex string to even number of hexits.\n");
-  };
-  while (count > 0)
-  {
-    memcpy(octet_string, p, 2);
-    octet_string [2] = 0;
-    sscanf(octet_string, "%x", &hexit);
-    *pbinary = hexit;
-    pbinary++;
-    p = p + 2;
-    count = count - 2;
-    (*length)++;
-  };
-
-  return(ST_OK);
-
-} /* hex_to_binary */
-
-
 int main
   (int argc,
   char *argv[])
@@ -141,6 +101,7 @@ int main
   json_t *details_root;
   int i;
   char mfgrep_details [1024];
+  OB_CONTEXT openbadger_context;
   PKOC_RAW_CARD_PRESENT_PAYLOAD response_raw;
   int status;
   json_error_t status_json;
@@ -153,6 +114,7 @@ ctx->verbosity = 9;
   ctx->log = stderr;
   ctx->console = stdout;
   ctx->card_present_method = PKOC_CARD_PRESENT_MFG;
+  memset(&openbadger_context, 0, sizeof(openbadger_context));
   status = pkoc_read_settings(ctx);
   if (status EQUALS ST_OK)
     status = ob_pkoc_commandline(ctx, argc, argv);
@@ -161,13 +123,14 @@ ctx->verbosity = 9;
 
   if (status EQUALS ST_OK)
   {
+    openbadger_context.verbosity = ctx->verbosity;
 
     // if --error then send error response
 
     if (strlen(ctx->error_tlv_hex) > 0)
     {
       memset(&response_raw, 0, sizeof(response_raw));
-      status = hex_to_binary(ctx, ctx->error_tlv_hex, card_present_payload, &card_present_payload_length);
+      status = hex_to_binary(&openbadger_context, ctx->error_tlv_hex, card_present_payload, &card_present_payload_length);
       response_raw.format_code = OSDP_RAW_FORMAT_PRIVATE;
       response_raw.bits_lsb = (card_present_payload_length*8) & 0xff;
       response_raw.bits_msb = ((card_present_payload_length*8) & 0xff00) >> 8;

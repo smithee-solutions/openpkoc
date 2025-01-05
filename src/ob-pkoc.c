@@ -34,7 +34,7 @@
 
 int ob_validate_select_response
   (OB_CONTEXT *ctx,
-  OB_PKOC_CONTEXT *pkoc_ctx,
+  PKOC_CONTEXT *pkoc_ctx,
   unsigned char *response,
   int response_length)
 

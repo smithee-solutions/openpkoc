@@ -11,7 +11,11 @@ PROGS=obtest-pkoc pkoc-osdp
 
 CC=clang
 CFLAGS= ${DEFINES} \
-  -c -g -I. -I../include -I/opt/openbadger/include -I/opt/tester/include -I/opt/crypto/cyclone -I/opt/crypto/cyclone/cyclone_crypto -I/usr/include/PCSC -Wall -Werror
+  -c -g -I. -I../include \
+  -I../include/crypto_cyclone \
+  -I/opt/openbadger/include -I/opt/tester/include \
+  -I/opt/crypto/cyclone -I/opt/crypto/cyclone/cyclone_crypto \
+  -I/usr/include/PCSC -Wall -Werror
 #CFLAGS=-c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -I../openbadger -Wall -Werror
 LINK=clang
 LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -ljansson -lpcsclite 
