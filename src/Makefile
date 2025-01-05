@@ -21,6 +21,8 @@ LINK=clang
 LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -ljansson -lpcsclite 
 
 all:	setup_cyclone
+	mkdir -p ../opt/osdp-conformance/bin
+	cp ${PROGS} ../opt/osdp-conformance/bin
 
 setup_cyclone:
 
@@ -33,22 +35,22 @@ obtest-pkoc:	Makefile obtest-pkoc.o ob-pkoc.o ob-settings.o
 	${LINK} -o obtest-pkoc obtest-pkoc.o ob-pkoc.o ob-settings.o ${LDFLAGS}
 
 ob-pkoc.o:	ob-pkoc.c \
-	../include/ob-pkoc.h ${INCLUDES_FOR_CYCLONE}
+	../include/ob-pkoc.h
 	${CC} ${CFLAGS} ob-pkoc.c
 
-ob-pkoc-commandline.o:	ob-pkoc-commandline.c ../include/ob-pkoc.h ${INCLUDES_FOR_CYCLONE}
+ob-pkoc-commandline.o:	ob-pkoc-commandline.c ../include/ob-pkoc.h
 	${CC} ${CFLAGS} ob-pkoc-commandline.c
 
-ob-settings.o:	ob-settings.c ../include/ob-pkoc.h ${INCLUDES_FOR_CYCLONE}
+ob-settings.o:	ob-settings.c ../include/ob-pkoc.h 
 	${CC} ${CFLAGS} ob-settings.c
 
 obtest-pkoc.o:	obtest-pkoc.c \
-	../include/ob-pkoc.h ${INCLUDES_FOR_CYCLONE}
+	../include/ob-pkoc.h 
 	${CC} ${CFLAGS} -DALLOCATE_SELECT obtest-pkoc.c
 
 pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
 	${LINK} -o pkoc-osdp pkoc-osdp.o ob-pkoc-commandline.o ${LDFLAGS}
 
-pkoc-osdp.o:	pkoc-osdp.c ../include/ob-pkoc.h ${INCLUDES_FOR_CYCLONE}
+pkoc-osdp.o:	pkoc-osdp.c ../include/ob-pkoc.h 
 	${CC} ${CFLAGS} pkoc-osdp.c
 

@@ -1,0 +1,10 @@
+Package: openpkoc
+Version: 1.31
+Section: custom
+Priority: optional
+Architecture: amd64
+Essential: no
+Installed-Size: 1024
+Maintainer: github@smithee.solutions
+Description: PKOC NFC credential OSDP reader add-on
+
