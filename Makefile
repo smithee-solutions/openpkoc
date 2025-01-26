@@ -10,7 +10,7 @@ clean:
 	rm -f include/ob-crypto.h
 	(cd src; make clean)
 	(cd package; make clean)
-	rm -rf opt
+	rm -rf opt *.deb
 
 package:	all
 	(cd package; make package)

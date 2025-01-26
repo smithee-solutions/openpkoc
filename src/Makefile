@@ -31,8 +31,8 @@ all:	${PROGS}
 clean:
 	rm -f core *.o ${PROGS}
 
-obtest-pkoc:	Makefile obtest-pkoc.o ob-pkoc.o ob-settings.o
-	${LINK} -o obtest-pkoc obtest-pkoc.o ob-pkoc.o ob-settings.o ${LDFLAGS}
+obtest-pkoc:	Makefile obtest-pkoc.o ob-pkoc.o op-settings.o
+	${LINK} -o obtest-pkoc obtest-pkoc.o ob-pkoc.o op-settings.o ${LDFLAGS}
 
 ob-pkoc.o:	ob-pkoc.c \
 	../include/ob-pkoc.h
@@ -41,12 +41,12 @@ ob-pkoc.o:	ob-pkoc.c \
 ob-pkoc-commandline.o:	ob-pkoc-commandline.c ../include/ob-pkoc.h
 	${CC} ${CFLAGS} ob-pkoc-commandline.c
 
-ob-settings.o:	ob-settings.c ../include/ob-pkoc.h 
-	${CC} ${CFLAGS} ob-settings.c
-
 obtest-pkoc.o:	obtest-pkoc.c \
 	../include/ob-pkoc.h 
 	${CC} ${CFLAGS} -DALLOCATE_SELECT obtest-pkoc.c
+
+op-settings.o:	op-settings.c ../include/ob-pkoc.h 
+	${CC} ${CFLAGS} op-settings.c
 
 pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
 	${LINK} -o pkoc-osdp pkoc-osdp.o ob-pkoc-commandline.o ${LDFLAGS}

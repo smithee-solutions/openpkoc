@@ -1,4 +1,6 @@
-#define OB_SETTINGS_FILE "openbadger-settings.json"
+/*
+  (C)2023-2025 Smithee Solutions LLC
+*/
 
 #include <stdio.h>
 #include <string.h>
@@ -10,6 +12,7 @@
 #include <ob-crypto.h>
 #include <openbadger-common.h>
 
+#include <openpkoc.h>
 
 /*
   ob_read_settings - reads settings values from json file (local or system default)
@@ -41,15 +44,15 @@ int ob_read_settings
 
   // try to use local settings file
 
-  sprintf(settings_filename, "./%s", OB_SETTINGS_FILE);
-  root = json_load_file(OB_SETTINGS_FILE, 0, &status_json);
+  sprintf(settings_filename, "./%s", OPENPKOC_SETTINGS_FILE);
+  root = json_load_file(OPENPKOC_SETTINGS_FILE, 0, &status_json);
   if (root)
   {
     settings_found = 1;
   };
   if (!settings_found)
   {
-    sprintf(settings_filename, "/opt/tester/etc/%s", OB_SETTINGS_FILE);
+    sprintf(settings_filename, "/opt/tester/etc/%s", OPENPKOC_SETTINGS_FILE);
     root = json_load_file(settings_filename, 0, &status_json);
     if (root)
     {
