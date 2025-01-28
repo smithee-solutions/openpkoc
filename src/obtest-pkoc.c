@@ -81,6 +81,7 @@ int main
 
   ctx = &test_pkoc_context;
   memset(ctx, 0, sizeof(*ctx));
+  ctx->log = stderr;
   ctx->rdrctx = &pcsc_reader_context;
 
   status = ob_read_settings(ctx);

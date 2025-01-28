@@ -20,23 +20,21 @@ verbosity - logging level.  3=normal 0=silent 9=debug
 use "opensc-tool --list-readers" to separately confirm your smartcard
 reader is visible.
 
-Typical oenbadger-settings.json
+Typical openbadger-settings.json
 {
   "bits"      " "128",
   "reader"    : "1",
   "verbosity" :"3"
 }
 
+Note openssl 3.2 or later is required.
+
 
 # Building openpkoc #
 
-- build openbadger-dev
-
-```
-  make
-```
+t.b.d.
 
 # Punchlist #
 
-- package
+- integrate with mainline openbadger
 
