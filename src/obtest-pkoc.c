@@ -13,7 +13,7 @@ unsigned char spec_identifier [] = {
   generates on stdout a command appropriate to cause
   libosdp-conformance to emit an osdp_RAW message via OSDP
 
-  (C)Copyright 2023 Smithee Solutions LLC
+  (C)Copyright 2023-2025 Smithee Solutions LLC
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -39,17 +39,14 @@ unsigned char spec_identifier [] = {
 #include <PCSC/winscard.h>
 
 
+#include <eac-encode.h>
 #include <ob-crypto.h>
 #include <openbadger-common.h>
 #include <ob-7816.h>
 #include <ob-pcsc.h>
 #include <openpkoc-version.h>
-#include <ob-pkoc.h>
-#define OBTEST_PKOC_PUBLIC_KEY "ec-public-key.der"
+#include <openpkoc.h>
 int ob_read_settings(OB_CONTEXT *ctx);
-
-int ob_initialize_pubkey_DER(OB_CONTEXT *ctx, unsigned char *key_buffer, int kblth);
-int ob_initialize_signature_DER(OB_CONTEXT *ctx, unsigned char *part_1, int p1lth, unsigned char *part_2, int p2lth);
 
 
 int main
@@ -70,6 +67,10 @@ int main
   BYTE pbRecvBuffer [2*OB_7816_APDU_PAYLOAD_MAX];
   OB_RDRCTX pcsc_reader_context;
   PKOC_CONTEXT pkoc_context;
+  EAC_ENCODE_OBJECT pkoc_public_key;
+  unsigned char pkoc_signature [EAC_CRYPTO_MAX_DER];
+  unsigned char pubkey_der [8192];
+  int pubkey_der_length;
   OB_RDRCTX *rdrctx;
   unsigned char smartcard_command [OB_7816_BUFFER_MAX];
   int smartcard_command_length;
@@ -77,28 +78,37 @@ int main
   LONG status_pcsc;
   OB_CONTEXT test_pkoc_context;
   char verify_command [1024];
+  unsigned char whole_sig [16384];
+  int whole_sig_lth;
 
 
+  status = ST_OK;
   ctx = &test_pkoc_context;
   memset(ctx, 0, sizeof(*ctx));
   ctx->log = stderr;
   ctx->rdrctx = &pcsc_reader_context;
 
-  status = ob_read_settings(ctx);
+  // use crypto context for verify signature operation
 
+  memset(&pkoc_public_key, 0, sizeof(pkoc_public_key));
+  memset(pkoc_signature, 0, sizeof(pkoc_signature));
+  if (status EQUALS ST_OK)
+  {
+    status = ob_read_settings(ctx);
+  };
   rdrctx = ctx->rdrctx;
   smartcard_command_length = 0;
-
   fprintf(stderr, "obtest PKOC tester %s\n", OPENPKOC_VERSION);
-// OPENBADGER_VERSION
-
   fprintf(stderr, "Reader %d.\n", ctx->reader_index);
   fprintf(stderr, "PD Control %s Verbosity %d.\n", ctx->pd_control, ctx->verbosity);
 
-  status = ob_init_smartcard(ctx);
+  if (status EQUALS ST_OK)
+  {
+    status = ob_init_smartcard(ctx);
 
-      memcpy(smartcard_command, SELECT_PKOC, sizeof(SELECT_PKOC));
-      smartcard_command_length = sizeof(SELECT_PKOC);
+    memcpy(smartcard_command, SELECT_PKOC, sizeof(SELECT_PKOC));
+    smartcard_command_length = sizeof(SELECT_PKOC);
+  };
 
   if (ctx->verbosity > 3)
   {
@@ -227,6 +237,9 @@ int main
       p++;
       remainder--;
 
+      memcpy(pkoc_public_key.encoded, p, payload_size);
+      pkoc_public_key.enc_lth = payload_size;
+
       memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
@@ -238,6 +251,8 @@ int main
       payload_size = *p;
       p++;
       remainder--;
+
+      memcpy(pkoc_signature, p, payload_size);
 
       memcpy(pkoc_context.pkoc_signature, p, payload_size);
       p = p + payload_size;
@@ -251,24 +266,27 @@ int main
       p++;
       remainder--;
 
+      memcpy(pkoc_public_key.encoded, p, payload_size);
+      pkoc_public_key.enc_lth = payload_size;
+
       memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
     fprintf(stderr, "Public Key:\n");
-    ob_dump_buffer (ctx, pkoc_context.ec_public_key, OB_PKOC_PUBKEY_LENGTH, 0);
+    ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
     fprintf(stderr, "Signature:\n");
     ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 0);
 
     // output a DER-formatted copy of the public key.
-    status = ob_initialize_pubkey_DER(ctx, pkoc_context.ec_public_key, OB_PKOC_PUBKEY_LENGTH);
+    status = op_initialize_pubkey_DER(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, pubkey_der, &pubkey_der_length);
     if (status EQUALS ST_OK)
-      fprintf(stderr, "file %s created\n", OBTEST_PKOC_PUBLIC_KEY);
+      fprintf(stderr, "file %s created\n", OPENPKOC_PUBLIC_KEY);
   };
   if (status EQUALS ST_OK)
   {
     // output a DER-formatted copy of the signature.
-    status = ob_initialize_signature_DER(ctx, pkoc_context.pkoc_signature, 32, pkoc_context.pkoc_signature+32, 32);
+    status = op_initialize_signature_DER(ctx, pkoc_signature, 32, pkoc_signature+32, 32, whole_sig, &whole_sig_lth);
     if (status EQUALS ST_OK)
       fprintf(stderr, "file ec-sig.der created\n");
   };
@@ -283,16 +301,22 @@ int main
     fclose(tbs_blob);
 
     /*
-      having constructed a proper DER-formatted signature and a proper DER-formatted copy of the public key extracted from the card,
+      having constructed a proper DER-formatted signature and a proper
+      DER-formatted copy of the public key extracted from the card,
       use openssl to perform an ECDSA signature verification operation.
     */
-
-    sprintf(verify_command, "openssl version;openssl dgst -sha256 -verify %s -signature ec-sig.der tbs-pkoc.bin", OBTEST_PKOC_PUBLIC_KEY);
+    sprintf(verify_command, "openssl version;openssl dgst -sha256 -verify %s -signature ec-sig.der tbs-pkoc.bin", OPENPKOC_PUBLIC_KEY);
     if (ctx->verbosity > 3)
       fprintf(stderr, "verify command: %s\n", verify_command);
     if (ctx->verbosity > 0)
       fprintf(stderr, "Checking signature with openssl\n");
     system(verify_command);
+  };
+
+  if (status EQUALS ST_OK)
+  {
+    status = op_verify_signature(&pkoc_context);
+fprintf(stderr, "DEBUG: put back into context so outpot code keeps working.\n");
   };
 
   if (status EQUALS ST_OK)
@@ -343,98 +367,4 @@ int main
   return(status);
 
 } /* main for obtest-pkoc */
-
-
-// specifically for NIST P256R1
-
-unsigned char ec_public_key_der_skeleton [] =
-{
-  0x30,0x59,0x30,0x13,0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01,0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07,0x03,0x42,0x00
-  // actual 65 byte key goes after this
-};
-
-int ob_initialize_pubkey_DER
-  (OB_CONTEXT *ctx,
-  unsigned char *key_buffer,
-  int kblth)
-
-{ /* op_intiialize_pubkey_DER */
-
-  FILE *ec_der_key;
-
-
-  ec_der_key = fopen(OBTEST_PKOC_PUBLIC_KEY, "w");
-  fwrite(ec_public_key_der_skeleton, 1, sizeof(ec_public_key_der_skeleton), ec_der_key);
-  fwrite(key_buffer, 1, kblth, ec_der_key);
-  fclose(ec_der_key);
-  return(ST_OK);
-
-} /* op_intiialize_pubkey_DER */
-
-
-unsigned char ec_signature_der_skeleton_1 [] =
-{
-  0x30,0x44,0x02,0x20,0x00 
-// then 32 of part 1
-};
-unsigned char ec_signature_der_skeleton_2 [] =
-{
-  0x02,0x20,0x00 
-// then 32 of part 2
-};
-
-int ob_initialize_signature_DER
-  (OB_CONTEXT *ctx,
-  unsigned char *part_1,
-  int part1lth,
-  unsigned char *part_2,
-  int part2lth)
-
-{ /* ob_initialize_signature_DER */
-
-  FILE *ec_der_sig;
-  int lth;
-  int whole_length;
-
-
-  // if the pieces have the high order bit set insert a null byte
-
-  // fiddle the outer length accordingly
-
-  whole_length = 32 + 32 + 4;
-  if (0x80 & *part_1)
-  {
-    whole_length++;
-    ec_signature_der_skeleton_1 [3] = 0x21;
-    if (ctx->verbosity > 9)
-      fprintf(stderr, "part 1 first octet %02X\n", *part_1);
-  };
-  if (0x80 & *part_2)
-  {
-    whole_length++;
-    ec_signature_der_skeleton_2 [1] = 0x21;
-    if (ctx->verbosity > 9)
-      fprintf(stderr, "part 2 first octet %02X\n", *part_2);
-  };
-  ec_signature_der_skeleton_1 [1] = whole_length;
-
-  ec_der_sig = fopen("ec-sig.der", "w");
-  lth = sizeof(ec_signature_der_skeleton_1);
-  if (!(0x80 & *part_1))
-    lth--;
-  if (ctx->verbosity > 9)
-    fprintf(stderr, "part 1 write length %d.\n", lth);
-  fwrite(ec_signature_der_skeleton_1, 1, lth, ec_der_sig);
-  fwrite(part_1, 1, part1lth, ec_der_sig);
-  lth = sizeof(ec_signature_der_skeleton_2);
-  if (!(0x80 & *part_2))
-    lth--;
-  if (ctx->verbosity > 9)
-    fprintf(stderr, "part 2 write length %d.\n", lth);
-  fwrite(ec_signature_der_skeleton_2, 1, lth, ec_der_sig);
-  fwrite(part_2, 1, part2lth, ec_der_sig);
-  fclose(ec_der_sig);
-  return(ST_OK);
-
-} /* ob_initialize_signature_DER */
 

@@ -7,7 +7,7 @@
 DEFINES = -D GPL_LICENSE_TERMS_ACCEPTED
 INCLUDES_FOR_CYCLONE=compiler_port.h cpu_endian.h crypto_config.h date_time.h os_port.h os_port_config.h os_port_posix.h
 
-PROGS=obtest-pkoc pkoc-osdp
+PROGS=obtest-pkoc
 
 CC=clang
 CFLAGS= ${DEFINES} \
@@ -18,7 +18,7 @@ CFLAGS= ${DEFINES} \
   -I/usr/include/PCSC -Wall -Werror
 #CFLAGS=-c -g -I/opt/tester/include -I/usr/include/PCSC -I../include -I../openbadger -Wall -Werror
 LINK=clang
-LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -ljansson -lpcsclite 
+LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -leac-encode -leac-crypto_cyclone -L /opt/crypto/lib -lcyclone -ljansson -lpcsclite 
 
 all:	setup_cyclone
 	mkdir -p ../opt/osdp-conformance/bin
@@ -31,12 +31,12 @@ all:	${PROGS}
 clean:
 	rm -f core *.o ${PROGS}
 
-obtest-pkoc:	Makefile obtest-pkoc.o ob-pkoc.o op-settings.o
-	${LINK} -o obtest-pkoc obtest-pkoc.o ob-pkoc.o op-settings.o ${LDFLAGS}
+obtest-pkoc:	Makefile obtest-pkoc.o op-pkoc.o op-settings.o
+	${LINK} -o obtest-pkoc obtest-pkoc.o op-pkoc.o op-settings.o ${LDFLAGS}
 
-ob-pkoc.o:	ob-pkoc.c \
+op-pkoc.o:	op-pkoc.c \
 	../include/ob-pkoc.h
-	${CC} ${CFLAGS} ob-pkoc.c
+	${CC} ${CFLAGS} op-pkoc.c
 
 ob-pkoc-commandline.o:	ob-pkoc-commandline.c ../include/ob-pkoc.h
 	${CC} ${CFLAGS} ob-pkoc-commandline.c
