@@ -72,6 +72,8 @@ int main
   unsigned char pubkey_der [8192];
   int pubkey_der_length;
   OB_RDRCTX *rdrctx;
+  unsigned char saved_public_key [1024];
+  int saved_public_key_lth;
   unsigned char smartcard_command [OB_7816_BUFFER_MAX];
   int smartcard_command_length;
   int status;
@@ -283,6 +285,10 @@ int main
 
     // output a DER-formatted copy of the public key.
     status = op_initialize_pubkey_DER(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, pubkey_der, &pubkey_der_length);
+fprintf(stderr, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
+ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
+saved_public_key_lth = pkoc_public_key.enc_lth;
     if (status EQUALS ST_OK)
       fprintf(stderr, "file %s created\n", OPENPKOC_PUBLIC_KEY);
   };
@@ -319,7 +325,6 @@ int main
   if (status EQUALS ST_OK)
   {
     status = op_verify_signature(&pkoc_context, pubkey_der, pubkey_der_length);
-fprintf(stderr, "DEBUG: put back into context so outpot code keeps working.\n");
   };
 
   if (status EQUALS ST_OK)
@@ -327,22 +332,29 @@ fprintf(stderr, "DEBUG: put back into context so outpot code keeps working.\n");
     char command [1024];
     int i;
     char octet_string [3];
+    int offset;
     char osdp_command [2048];
     unsigned char raw_key [64];
     FILE *resp;
     int return_size;
 
     fprintf(stderr, "Public Key Open Credential:\n");
+fprintf(stderr, "available saved bits: %d.\n", saved_public_key_lth*8);
     memset(raw_key, 0, sizeof(raw_key));
-    if (ctx->bits_to_return EQUALS 128)
+    if (ctx->bits_to_return EQUALS 64)
     {
-      memcpy(raw_key, pkoc_context.ec_public_key+16, 128/8);
-      return_size = 128/8;
+      offset = saved_public_key_lth - (64/8);
+      memcpy(raw_key, saved_public_key+offset, ctx->bits_to_return/8);
+      return_size = ctx->bits_to_return/8;
     }
     else
     {
-      memcpy(raw_key, pkoc_context.ec_public_key, sizeof(raw_key));
-      return_size = 64;
+      memcpy(raw_key, saved_public_key, saved_public_key_lth);
+      return_size = saved_public_key_lth/8;
+fprintf(stderr, "assuming low order 128 bits.\n");
+      offset = saved_public_key_lth - (128/8);
+      memcpy(raw_key, saved_public_key+offset, 128/8);
+      return_size = 128/8;
     }
 
     ob_dump_buffer (ctx, raw_key, sizeof(raw_key), 0);
