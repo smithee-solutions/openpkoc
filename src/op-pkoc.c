@@ -100,6 +100,8 @@ int op_initialize_signature_DER
   unsigned char *pwholesig;
   int whole_length;
 
+//todo note the marshalled signature is returned, eliminate the shared buffer kludge...
+
 
   // if the pieces have the high order bit set insert a null byte
 
@@ -158,7 +160,7 @@ int op_initialize_signature_DER
   fclose(ec_der_sig);
 
   whole_sig_lth_shared = *whole_sig_lth;
-  memcpy(whole_sig_shared, pwholesig, whole_sig_lth_shared);
+  memcpy(whole_sig_shared, marshalled_signature, whole_sig_lth_shared);
 
   return(ST_OK);
 
@@ -180,6 +182,9 @@ int ob_validate_select_response
 
 
   status = ST_OK;
+
+  // todo: should both contexts be here?
+  pkoc_ctx->verbosity = ctx->verbosity;
 
   if (status EQUALS ST_OK)
   {
@@ -232,7 +237,9 @@ status = ST_OK;
 
 
 int op_verify_signature
-  (PKOC_CONTEXT *ctx)
+  (PKOC_CONTEXT *ctx,
+  unsigned char *pubkey_der,
+  int pubkey_der_length)
 
 { /* op_verify_signature */
 
@@ -243,8 +250,6 @@ int op_verify_signature
   char log_message [2048];
   OB_CONTEXT openbadger_context;
   EAC_ENCODE_OBJECT pkoc_public_key;
-  unsigned char pubkey_der [8192];
-  int pubkey_der_length;
   EAC_ENCODE_OBJECT signature_info;
   EAC_ENCODE_OBJECT signature_object;
   int status;
@@ -261,6 +266,8 @@ int op_verify_signature
     crypto_context.verbosity = ctx->verbosity;
     crypto_context.eac_log = eac_log;
     status = eac_encode_allocate_object(&crypto_context, &pkoc_public_key);
+    if (status EQUALS ST_OK)
+      status = eac_crypto_internal_allocate(&crypto_context, &pkoc_public_key);
     if (status EQUALS ST_OK)
       status = eac_crypto_digest_init(&crypto_context, &digest_object);
   };
@@ -285,7 +292,6 @@ int op_verify_signature
   {
     pkoc_public_key.key_parameters [0] = EAC_CRYPTO_EC;
     pkoc_public_key.key_parameters [1] = EAC_KEY_EC_CURVE_SECP256R1;
-    pubkey_der_length = sizeof(pubkey_der);
 
     status = eac_crypto_pubkey_init(&crypto_context, &pkoc_public_key, pubkey_der, pubkey_der_length);
   };

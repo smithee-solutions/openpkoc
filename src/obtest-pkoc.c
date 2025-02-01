@@ -87,6 +87,8 @@ int main
   memset(ctx, 0, sizeof(*ctx));
   ctx->log = stderr;
   ctx->rdrctx = &pcsc_reader_context;
+  pkoc_context.log = stderr;
+  ctx->bits_to_return = 128;
 
   // use crypto context for verify signature operation
 
@@ -101,6 +103,7 @@ int main
   fprintf(stderr, "obtest PKOC tester %s\n", OPENPKOC_VERSION);
   fprintf(stderr, "Reader %d.\n", ctx->reader_index);
   fprintf(stderr, "PD Control %s Verbosity %d.\n", ctx->pd_control, ctx->verbosity);
+  fprintf(stderr, "Bits to return: %d.\n", ctx->bits_to_return);
 
   if (status EQUALS ST_OK)
   {
@@ -315,7 +318,7 @@ int main
 
   if (status EQUALS ST_OK)
   {
-    status = op_verify_signature(&pkoc_context);
+    status = op_verify_signature(&pkoc_context, pubkey_der, pubkey_der_length);
 fprintf(stderr, "DEBUG: put back into context so outpot code keeps working.\n");
   };
 

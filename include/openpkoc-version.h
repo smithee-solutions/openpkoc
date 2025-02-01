@@ -1,2 +1,2 @@
-#define OPENPKOC_VERSION "1.31"
+#define OPENPKOC_VERSION "1.32"
 

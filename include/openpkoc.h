@@ -110,5 +110,5 @@ int op_initialize_pubkey_DER(OB_CONTEXT *ctx, unsigned char *key_buffer, int kbl
 int op_initialize_signature_DER(OB_CONTEXT *ctx, unsigned char *part_1, int part1lth,
   unsigned char *part_2, int part2lth, unsigned char *marshalled_signature,
   int *whole_sig_lth);
-int op_verify_signature(PKOC_CONTEXT *ctx);
+int op_verify_signature(PKOC_CONTEXT *ctx, unsigned char *pubkey_der, int pubkey_der_length);
 
