@@ -120,7 +120,7 @@ int main
 
   if (ctx->verbosity > 3)
   {
-    ob_dump_buffer(ctx, smartcard_command, smartcard_command_length, 0);
+    ob_dump_buffer(ctx, smartcard_command, smartcard_command_length, 1);
   };
 
   // send application select to card
@@ -135,7 +135,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Select returns: ");
-      ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
+      ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 1);
     };
 
     status = ob_validate_select_response(ctx, &pkoc_context, pbRecvBuffer, dwRecvLength);
@@ -190,7 +190,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Transaction Identifer:\n");
-      ob_dump_buffer (ctx, smartcard_command+smartcard_command_length, OB_PKOC_TRANSACTID_LENGTH, 0);
+      ob_dump_buffer (ctx, smartcard_command+smartcard_command_length, OB_PKOC_TRANSACTID_LENGTH, 1);
     };
     smartcard_command_length = smartcard_command_length + OB_PKOC_TRANSACTID_LENGTH;
     
@@ -214,7 +214,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Marshalled Authentication Command:\n");
-      ob_dump_buffer (ctx, smartcard_command, smartcard_command_length, 0);
+      ob_dump_buffer (ctx, smartcard_command, smartcard_command_length, 1);
     };
   };
 
@@ -233,7 +233,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Authentication returns:\n");
-      ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
+      ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 1);
     };
   };
   if (status EQUALS ST_OK)
@@ -293,9 +293,9 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Public Key:\n");
-      ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+      ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
       fprintf(LOG, "Signature:\n");
-      ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 0);
+      ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 1);
     };
 
     // output a DER-formatted copy of the public key.
@@ -304,7 +304,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
-      ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+      ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
     };
 memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
     if (status EQUALS ST_OK)

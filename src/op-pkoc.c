@@ -282,7 +282,7 @@ int op_verify_signature
     if (crypto_context.verbosity > 3)
     {
       fprintf(LOG, "digest...\n");
-      ob_dump_buffer(&openbadger_context, digest, digest_lth, 0);
+      ob_dump_buffer(&openbadger_context, digest, digest_lth, 1);
     };
   };
   if (digest_object.internal)
