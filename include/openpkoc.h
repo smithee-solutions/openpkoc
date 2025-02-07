@@ -17,6 +17,7 @@
 */
 
 
+#define LOG stdout
 #define OPENPKOC_PUBLIC_KEY "ec-public-key.der"
 #define OPENPKOC_SETTINGS_FILE "openpkoc-settings.json"
 
@@ -76,6 +77,7 @@ typedef struct pkoc_context
   char error_tlv_hex [1024];
   FILE *log;
   char next_transaction_details [1024];
+  OB_CONTEXT *ob_ctx;
   int option;
   unsigned char oui [3];
   int request_response_voice; // 0=request
@@ -110,5 +112,6 @@ int op_initialize_pubkey_DER(OB_CONTEXT *ctx, unsigned char *key_buffer, int kbl
 int op_initialize_signature_DER(OB_CONTEXT *ctx, unsigned char *part_1, int part1lth,
   unsigned char *part_2, int part2lth, unsigned char *marshalled_signature,
   int *whole_sig_lth);
+void op_pkoc_print (PKOC_CONTEXT *ctx, unsigned char *public_key, int public_key_length, FILE *outfile);
 int op_verify_signature(PKOC_CONTEXT *ctx, unsigned char *pubkey_der, int pubkey_der_length);
 

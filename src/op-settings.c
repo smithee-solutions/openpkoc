@@ -85,7 +85,7 @@ int ob_read_settings
       ctx->verbosity = i;
     };
     if (ctx->verbosity > 3)
-      fprintf(stderr, "reading settings from %s\n", settings_filename);
+      fprintf(LOG, "reading settings from %s\n", settings_filename);
   };
 
   return(status);

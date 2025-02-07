@@ -73,7 +73,6 @@ int main
   int pubkey_der_length;
   OB_RDRCTX *rdrctx;
   unsigned char saved_public_key [1024];
-  int saved_public_key_lth;
   unsigned char smartcard_command [OB_7816_BUFFER_MAX];
   int smartcard_command_length;
   int status;
@@ -87,9 +86,10 @@ int main
   status = ST_OK;
   ctx = &test_pkoc_context;
   memset(ctx, 0, sizeof(*ctx));
-  ctx->log = stderr;
+  ctx->log = LOG;
   ctx->rdrctx = &pcsc_reader_context;
-  pkoc_context.log = stderr;
+  pkoc_context.log = LOG;
+  pkoc_context.ob_ctx = ctx;
   ctx->bits_to_return = 128;
 
   // use crypto context for verify signature operation
@@ -102,10 +102,13 @@ int main
   };
   rdrctx = ctx->rdrctx;
   smartcard_command_length = 0;
-  fprintf(stderr, "obtest PKOC tester %s\n", OPENPKOC_VERSION);
-  fprintf(stderr, "Reader %d.\n", ctx->reader_index);
-  fprintf(stderr, "PD Control %s Verbosity %d.\n", ctx->pd_control, ctx->verbosity);
-  fprintf(stderr, "Bits to return: %d.\n", ctx->bits_to_return);
+  fprintf(LOG, "obtest PKOC tester %s\n", OPENPKOC_VERSION);
+  if (ctx->verbosity > 3)
+  {
+    fprintf(LOG, "Reader %d.\n", ctx->reader_index);
+    fprintf(LOG, "PD Control %s Verbosity %d.\n", ctx->pd_control, ctx->verbosity);
+    fprintf(LOG, "Bits to return: %d.\n", ctx->bits_to_return);
+  };
 
   if (status EQUALS ST_OK)
   {
@@ -131,7 +134,7 @@ int main
   {
     if (ctx->verbosity > 3)
     {
-      fprintf(stderr, "Select returns: ");
+      fprintf(LOG, "Select returns: ");
       ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
     };
 
@@ -184,8 +187,11 @@ int main
     memcpy(pkoc_context.transaction_identifier, spec_identifier, OB_PKOC_TRANSACTID_LENGTH);
 #endif
     memcpy(smartcard_command+smartcard_command_length, pkoc_context.transaction_identifier, OB_PKOC_TRANSACTID_LENGTH);
-    fprintf(stderr, "Transaction Identifer:\n");
-    ob_dump_buffer (ctx, smartcard_command+smartcard_command_length, OB_PKOC_TRANSACTID_LENGTH, 0);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "Transaction Identifer:\n");
+      ob_dump_buffer (ctx, smartcard_command+smartcard_command_length, OB_PKOC_TRANSACTID_LENGTH, 0);
+    };
     smartcard_command_length = smartcard_command_length + OB_PKOC_TRANSACTID_LENGTH;
     
     // tag,length,value - reader identifier
@@ -205,8 +211,11 @@ int main
     smartcard_command [smartcard_command_length] = msg_le;
     smartcard_command_length++;
 
-    fprintf(stderr, "Marshalled Authentication Command:\n");
-    ob_dump_buffer (ctx, smartcard_command, smartcard_command_length, 0);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "Marshalled Authentication Command:\n");
+      ob_dump_buffer (ctx, smartcard_command, smartcard_command_length, 0);
+    };
   };
 
   if (status EQUALS ST_OK)
@@ -221,8 +230,11 @@ int main
   };
   if (status EQUALS ST_OK)
   {
-    fprintf(stderr, "Authentication returns:\n");
-    ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "Authentication returns:\n");
+      ob_dump_buffer (ctx, pbRecvBuffer, dwRecvLength, 0);
+    };
   };
   if (status EQUALS ST_OK)
   {
@@ -278,26 +290,32 @@ int main
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
-    fprintf(stderr, "Public Key:\n");
-    ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
-    fprintf(stderr, "Signature:\n");
-    ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 0);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "Public Key:\n");
+      ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+      fprintf(LOG, "Signature:\n");
+      ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 0);
+    };
 
     // output a DER-formatted copy of the public key.
     status = op_initialize_pubkey_DER(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, pubkey_der, &pubkey_der_length);
-fprintf(stderr, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
-ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+    op_pkoc_print(&pkoc_context, pkoc_public_key.encoded, pkoc_public_key.enc_lth, LOG);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
+      ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 0);
+    };
 memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
-saved_public_key_lth = pkoc_public_key.enc_lth;
     if (status EQUALS ST_OK)
-      fprintf(stderr, "file %s created\n", OPENPKOC_PUBLIC_KEY);
+      fprintf(LOG, "file %s created\n", OPENPKOC_PUBLIC_KEY);
   };
   if (status EQUALS ST_OK)
   {
     // output a DER-formatted copy of the signature.
     status = op_initialize_signature_DER(ctx, pkoc_signature, 32, pkoc_signature+32, 32, whole_sig, &whole_sig_lth);
     if (status EQUALS ST_OK)
-      fprintf(stderr, "file ec-sig.der created\n");
+      fprintf(LOG, "file ec-sig.der created\n");
   };
   if (status EQUALS ST_OK)
   {
@@ -316,14 +334,15 @@ saved_public_key_lth = pkoc_public_key.enc_lth;
     */
     sprintf(verify_command, "openssl version;openssl dgst -sha256 -verify %s -signature ec-sig.der tbs-pkoc.bin", OPENPKOC_PUBLIC_KEY);
     if (ctx->verbosity > 3)
-      fprintf(stderr, "verify command: %s\n", verify_command);
+      fprintf(LOG, "verify command: %s\n", verify_command);
     if (ctx->verbosity > 0)
-      fprintf(stderr, "Checking signature with openssl\n");
+      fprintf(LOG, "Checking signature with openssl\n");
     system(verify_command);
   };
 
   if (status EQUALS ST_OK)
   {
+    fprintf(LOG, "Verifying signature.\n");
     status = op_verify_signature(&pkoc_context, pubkey_der, pubkey_der_length);
   };
 
@@ -338,26 +357,22 @@ saved_public_key_lth = pkoc_public_key.enc_lth;
     FILE *resp;
     int return_size;
 
-    fprintf(stderr, "Public Key Open Credential:\n");
-fprintf(stderr, "available saved bits: %d.\n", saved_public_key_lth*8);
     memset(raw_key, 0, sizeof(raw_key));
+
     if (ctx->bits_to_return EQUALS 64)
     {
-      offset = saved_public_key_lth - (64/8);
+      offset = 1+(128/8)+(64/8);
       memcpy(raw_key, saved_public_key+offset, ctx->bits_to_return/8);
       return_size = ctx->bits_to_return/8;
     }
     else
     {
-      memcpy(raw_key, saved_public_key, saved_public_key_lth);
-      return_size = saved_public_key_lth/8;
-fprintf(stderr, "assuming low order 128 bits.\n");
-      offset = saved_public_key_lth - (128/8);
+fprintf(LOG, "assuming low order 128 bits.\n");
+      offset = 1+(128/8);
       memcpy(raw_key, saved_public_key+offset, 128/8);
       return_size = 128/8;
     }
 
-    ob_dump_buffer (ctx, raw_key, sizeof(raw_key), 0);
     sprintf(osdp_command, "{\"command\":\"present-card\",\"format\":\"raw\",\"bits\":\"%d\",\"raw\":\"", ctx->bits_to_return);
 
     for (i=0; i<return_size; i++)
@@ -365,20 +380,19 @@ fprintf(stderr, "assuming low order 128 bits.\n");
       sprintf(octet_string, "%02X", raw_key [i]);
       strcat(osdp_command, octet_string);
     };
-    strcat(osdp_command, "\"}");
-    if (ctx->verbosity > 3)
-      fprintf(stderr, "OSDP Response will be:\n%s\n", osdp_command);
-    if (ctx->verbosity > 0)
-      fprintf(stderr, "Issuing OSDP PD response.\n");
+    strcat(osdp_command, "\"}\n");
+    if (ctx->verbosity > 2)
+      fprintf(LOG, "OSDP Response will be:\n%s", osdp_command);
     resp = fopen("pkoc-read.json", "w");
     fprintf(resp, "%s", osdp_command);
     fclose(resp);
+    fprintf(LOG, "file %s created, sending read command to PD.\n", "pkoc-read.json");
     sprintf(command, "/opt/osdp-conformance/bin/open-osdp-kick PD <pkoc-read.json");
     system(command);
   };
 
   if (status != ST_OK)
-    fprintf(stderr, "return status %d. last PCSC status %lX %s\n", status, rdrctx->last_pcsc_status, ob_pcsc_error_string(rdrctx->last_pcsc_status));
+    fprintf(LOG, "return status %d. last PCSC status %lX %s\n", status, rdrctx->last_pcsc_status, ob_pcsc_error_string(rdrctx->last_pcsc_status));
   return(status);
 
 } /* main for obtest-pkoc */

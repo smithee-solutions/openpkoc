@@ -29,6 +29,8 @@ Typical openbadger-settings.json
 
 Note openssl 3.2 or later is required.
 
+Verbosity level 3 is intended to create output usable in a conformance report.
+
 
 # Building openpkoc #
 

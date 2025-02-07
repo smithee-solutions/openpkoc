@@ -69,7 +69,7 @@ int ob_pkoc_commandline
         found_something = 1;
         sscanf(optstring, "%d", &i);
         ctx->bits = i;
-fprintf(stderr, "DEBUG: range check bits\n");
+fprintf(LOG, "DEBUG: range check bits\n");
         break;
 
       case OBPKOCOPT_CONTROL_PORT:
@@ -115,7 +115,7 @@ fprintf(stderr, "DEBUG: range check bits\n");
         break;
 
       default:
-        fprintf(stderr, "OPTION NOT IMPLEMENTED %d\n", ctx->option);
+        fprintf(LOG, "OPTION NOT IMPLEMENTED %d\n", ctx->option);
         break;
       };
       if (status_opt EQUALS -1)

@@ -82,7 +82,7 @@ void bytes_to_hex
   {
     sprintf(p, "%02X", *(raw+i));
     p = p + 2;
-fprintf(stderr, "DEBUG: bytes as hex (%d.) %s\n", length, byte_string);
+fprintf(LOG, "DEBUG: bytes as hex (%d.) %s\n", length, byte_string);
   };
 
 } /* bytes_to_hex */
@@ -111,7 +111,7 @@ int main
   memset(&pkoc_context, 0, sizeof(pkoc_context));
   ctx = &pkoc_context;
 ctx->verbosity = 9;
-  ctx->log = stderr;
+  ctx->log = LOG;
   ctx->console = stdout;
   ctx->card_present_method = PKOC_CARD_PRESENT_MFG;
   memset(&openbadger_context, 0, sizeof(openbadger_context));
@@ -163,7 +163,7 @@ ctx->verbosity = 9;
       else
         details_root = json_loads(mfgrep_details, 0, &status_json);
       if (details_root EQUALS NULL)
-        fprintf(stderr, "payload parse error\n");
+        fprintf(LOG, "payload parse error\n");
       if (details_root != NULL)
       {
         memset(requested_oui_string, 0, sizeof(requested_oui_string));
@@ -194,7 +194,7 @@ ctx->verbosity = 9;
           switch(mfgrep_command)
           {
           default:
-            fprintf(stderr, "Unknown MFGREP command (%02X)\n", mfgrep_command);
+            fprintf(LOG, "Unknown MFGREP command (%02X)\n", mfgrep_command);
             status = -1;
             break;
           case OSDP_MFGREP_PKOC_READER_ERROR:
@@ -202,7 +202,7 @@ ctx->verbosity = 9;
             value = json_object_get(details_root, "4");
             if (json_string_value(value))
               strcpy(pkoc_reader_error_payload, json_string_value(value));
-            fprintf(stderr, "PKOC: Reader Error - %s\n", pkoc_reader_error_payload);
+            fprintf(LOG, "PKOC: Reader Error - %s\n", pkoc_reader_error_payload);
             break;
           };
         };
@@ -221,7 +221,7 @@ ctx->verbosity = 9;
   if (status != ST_OK)
   {
     fprintf(ctx->log, "pkoc-pd exit status %d.\n", status);
-    fprintf(stderr, "pkoc-pd exit status %d.\n", status);
+    fprintf(LOG, "pkoc-pd exit status %d.\n", status);
   };
   return(status);
 
@@ -250,7 +250,7 @@ int osdp_send_response_MFG
   {
     strcpy(ctx->control_port, "/opt/osdp-conformance/run/PD/open-osdp-control");
     if (ctx->verbosity > 3)
-      fprintf(stderr, "MFGREP so assuming standard PD\n");
+      fprintf(LOG, "MFGREP so assuming standard PD\n");
   };
   osdp_submit_command(ctx, command);
   return(status);
@@ -272,7 +272,7 @@ int osdp_send_response_RAW
 
 
   status = ST_OK;
-fprintf(stderr, "DEBUG: use lth to calc size of response %d\n", lth);
+fprintf(LOG, "DEBUG: use lth to calc size of response %d\n", lth);
   bytes_to_hex((unsigned char *)raw, sizeof(raw), byte_string);
   bits = sizeof((unsigned char *)raw) * 8;
   sprintf(command, 
@@ -299,7 +299,7 @@ void osdp_submit_command
     strcpy(control_port, ctx->control_port);
   sprintf(submission_command, "/opt/tester/bin/submit-osdp-command \"%s\" %s", command, control_port);
   if (ctx->verbosity > 3)
-    fprintf(stderr, "DEBUG: control port %s\n  command %s\n", control_port, command);
+    fprintf(LOG, "DEBUG: control port %s\n  command %s\n", control_port, command);
   system(submission_command);
 
 } /* osdp_submit_command */

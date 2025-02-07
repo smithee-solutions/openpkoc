@@ -113,14 +113,14 @@ int op_initialize_signature_DER
     whole_length++;
     ec_signature_der_skeleton_1 [3] = 0x21;
     if (ctx->verbosity > 9)
-      fprintf(stderr, "part 1 first octet %02X\n", *part_1);
+      fprintf(LOG, "part 1 first octet %02X\n", *part_1);
   };
   if (0x80 & *part_2)
   {
     whole_length++;
     ec_signature_der_skeleton_2 [1] = 0x21;
     if (ctx->verbosity > 9)
-      fprintf(stderr, "part 2 first octet %02X\n", *part_2);
+      fprintf(LOG, "part 2 first octet %02X\n", *part_2);
   };
   ec_signature_der_skeleton_1 [1] = whole_length;
 
@@ -129,7 +129,7 @@ int op_initialize_signature_DER
   if (!(0x80 & *part_1))
     lth--;
   if (ctx->verbosity > 9)
-    fprintf(stderr, "part 1 write length %d.\n", lth);
+    fprintf(LOG, "part 1 write length %d.\n", lth);
 
   fwrite(ec_signature_der_skeleton_1, 1, lth, ec_der_sig);
   pwholesig = marshalled_signature;
@@ -146,7 +146,7 @@ int op_initialize_signature_DER
   if (!(0x80 & *part_2))
     lth--;
   if (ctx->verbosity > 9)
-    fprintf(stderr, "part 2 write length %d.\n", lth);
+    fprintf(LOG, "part 2 write length %d.\n", lth);
 
   fwrite(ec_signature_der_skeleton_2, 1, lth, ec_der_sig);
   memcpy(pwholesig, ec_signature_der_skeleton_2, lth);
@@ -212,7 +212,7 @@ int ob_validate_select_response
     p++;
     remainder--;
     if (ctx->verbosity > 3)
-      fprintf(stderr, "Select response: protocol version (%d. octets) is %02X%02X\n",
+      fprintf(LOG, "Select response: protocol version (%d. octets) is %02X%02X\n",
         prot_ver_lth, *p, *(p+1));
     memcpy(pkoc_ctx->protocol_version, p, prot_ver_lth);
     pkoc_ctx->protocol_version_length = prot_ver_lth;
@@ -281,7 +281,7 @@ int op_verify_signature
   {
     if (crypto_context.verbosity > 3)
     {
-      fprintf(stderr, "digest...\n");
+      fprintf(LOG, "digest...\n");
       ob_dump_buffer(&openbadger_context, digest, digest_lth, 0);
     };
   };
@@ -314,7 +314,7 @@ int op_verify_signature
       &pkoc_public_key, digest, digest_lth,
       &signature_object, &signature_info);
     if (status EQUALS ST_OK)
-      fprintf(stderr, "***SIGNATURE VALID***\n");
+      fprintf(LOG, "***SIGNATURE VALID***\n");
   };
 
   return(status);
