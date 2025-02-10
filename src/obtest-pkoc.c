@@ -346,6 +346,9 @@ memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
     status = op_verify_signature(&pkoc_context, pubkey_der, pubkey_der_length);
   };
 
+  if (status != ST_OK)
+    fprintf(LOG, "!!! SIGNATURE VERIFICATION FAILED !!!\n");
+
   if (status EQUALS ST_OK)
   {
     char command [1024];
@@ -391,7 +394,7 @@ fprintf(LOG, "assuming low order 128 bits.\n");
     system(command);
   };
 
-  if (status != ST_OK)
+  if ((ctx->verbosity > 3) && (status != ST_OK))
     fprintf(LOG, "return status %d. last PCSC status %lX %s\n", status, rdrctx->last_pcsc_status, ob_pcsc_error_string(rdrctx->last_pcsc_status));
   return(status);
 
