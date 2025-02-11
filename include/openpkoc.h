@@ -1,5 +1,5 @@
 /*
-  ob-pkoc.h - PKOC parameter definitions
+  openpkoc.h - PKOC parameter definitions
 
   (C)Copyright 2023-2025 Smithee Solutions LLC
 

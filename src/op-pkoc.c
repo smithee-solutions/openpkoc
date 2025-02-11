@@ -1,7 +1,7 @@
 /*
   ob-pkoc - PKOC-specific routines
 
-  (C)Copyright 2023 Smithee Solutions LLC
+  (C)Copyright 2023-2025 Smithee Solutions LLC
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 #include <ob-crypto.h>
 #include <openbadger-common.h>
 #include <ob-7816.h>
-#include <ob-pkoc.h>
 #include <openpkoc.h>
 
 // kludge.  init sig function should take pkoc context not openbadger context, it

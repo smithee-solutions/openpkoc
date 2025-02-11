@@ -34,21 +34,19 @@ clean:
 obtest-pkoc:	Makefile obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o
 	${LINK} -o obtest-pkoc obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o ${LDFLAGS}
 
-op-pkoc.o:	op-pkoc.c \
-	../include/ob-pkoc.h
+op-pkoc.o:	op-pkoc.c
 	${CC} ${CFLAGS} op-pkoc.c
 
-ob-pkoc-commandline.o:	ob-pkoc-commandline.c ../include/ob-pkoc.h
+ob-pkoc-commandline.o:	ob-pkoc-commandline.c
 	${CC} ${CFLAGS} ob-pkoc-commandline.c
 
-obtest-pkoc.o:	obtest-pkoc.c \
-	../include/ob-pkoc.h 
+obtest-pkoc.o:	obtest-pkoc.c
 	${CC} ${CFLAGS} -DALLOCATE_SELECT obtest-pkoc.c
 
 op-pkoc-print.o:	op-pkoc-print.c
 	${CC} ${CFLAGS} op-pkoc-print.c
 
-op-settings.o:	op-settings.c ../include/ob-pkoc.h 
+op-settings.o:	op-settings.c
 	${CC} ${CFLAGS} op-settings.c
 
 pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
