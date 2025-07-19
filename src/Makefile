@@ -20,13 +20,14 @@ CFLAGS= ${DEFINES} \
 LINK=clang
 LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -leac-encode -leac-crypto_cyclone -L /opt/crypto/lib -lcyclone -ljansson -lpcsclite 
 
-all:	setup_cyclone
+LDFLAGS_OPEN=-g -L /opt/openbadger/lib -lopenbadger -leac-encode -leac-crypto_open-gcm -ljansson -lpcsclite 
+
+
+all:	${PROGS}
 	mkdir -p ../opt/osdp-conformance/bin
 	cp ${PROGS} ../opt/osdp-conformance/bin
 
-setup_cyclone:
-
-all:	${PROGS}
+all-open:	obtest-pkoc-open
 
 clean:
 	rm -f core *.o ${PROGS}
@@ -54,4 +55,8 @@ pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
 
 pkoc-osdp.o:	pkoc-osdp.c ../include/ob-pkoc.h 
 	${CC} ${CFLAGS} pkoc-osdp.c
+
+
+obtest-pkoc-open:	Makefile obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o
+	${LINK} -o obtest-pkoc obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o ${LDFLAGS_OPEN}
 

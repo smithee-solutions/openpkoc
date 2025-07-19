@@ -23,6 +23,7 @@
 #include <jansson.h>
 
 
+#include <eac-encode.h>
 #include <ob-crypto.h>
 #include <openbadger-common.h>
 

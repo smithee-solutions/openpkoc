@@ -246,6 +246,8 @@ int main
 
     p = pbRecvBuffer;
     remainder = dwRecvLength;
+    if (ctx->verbosity > 3)
+      fprintf(ctx->log, "Auth tag %02x\n", *p);
     if (*p EQUALS OB_PKOC_TAG_UNCOMP_PUBLIC_KEY)
     {
       p++;
@@ -261,6 +263,8 @@ int main
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
+    if (ctx->verbosity > 3)
+      fprintf(ctx->log, "Auth tag %02x\n", *p);
     if (*p EQUALS OB_PKOC_TAG_DIGITAL_SIGNATURE)
     {
       p++;
@@ -275,6 +279,8 @@ int main
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
+    if (ctx->verbosity > 3)
+      fprintf(ctx->log, "Auth tag %02x\n", *p);
     if (*p EQUALS OB_PKOC_TAG_UNCOMP_PUBLIC_KEY)
     {
       p++;

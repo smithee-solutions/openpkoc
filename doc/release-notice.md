@@ -4,6 +4,8 @@ title: release notice for openpkoc
 
 openpkoc is an add-on for libosdp-conformance that reads PKOC NFC credentials.
 
+misc files added in src/encoder - work in progress PKOC+Certificates format.
+
 ### changes in 1.33 ###
 
 format output for use with compliance report.
