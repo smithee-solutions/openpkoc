@@ -15,6 +15,7 @@
 #include <eac-smartcard.h>
 #include <pkoc-util.h>
 #include <pkoc-util-version.h>
+int initialize_pkoc_util(PKOC_UTIL_CONTEXT *ctx);
 
 
 int main
@@ -25,19 +26,11 @@ int main
 
   PKOC_UTIL_CONTEXT *ctx;
   PKOC_UTIL_CONTEXT my_context;
-  EAC_SMARTCARD_CONTEXT my_smartcard_context;
   int status;
 
 
   ctx = &my_context;
-  memset(ctx, 0, sizeof(*ctx));
-  ctx->verbosity = 9;
-  ctx->log = stderr;
-  ctx->sc_ctx = (void *)&my_smartcard_context;
-
-
-ctx->command = PKOC_UTIL_REQUEST_CERTIFICATE;
-ctx->certificate_index = 0;
+  status = initialize_pkoc_util(ctx);
 
   fprintf(stderr, "pkoc-cert-util %s\n", PKOC_CERT_UTIL_VERSION);
   if (ctx->verbosity > 3)
@@ -47,13 +40,17 @@ ctx->certificate_index = 0;
   switch(ctx->command)
   {
   case PKOC_UTIL_REQUEST_CERTIFICATE:
+    if (ctx->verbosity > 3)
+    {
+      fprintf(ctx->log, "Performing Request Certificate\n");
+    };
     status = pkoc_request_certificate(ctx, ctx->certificate_index);
     break;
   case PKOC_UTIL_LOAD_CERTIFICATE:
     status = pkoc_load_certificate(argc, argv);
     break;
   default:
-    status = -1;
+    status = STPKOC_UNKNOWN_COMMAND;
     break;
   };
 
@@ -62,4 +59,36 @@ ctx->certificate_index = 0;
   return(status);
 
 } /* main for pkoc-cert-util */
+
+
+int initialize_pkoc_util
+  (PKOC_UTIL_CONTEXT *ctx)
+
+{ /* initialize_pkoc_util */
+
+  EAC_SMARTCARD_CONTEXT my_smartcard_context;
+  int status;
+
+
+  status = ST_OK;
+  memset(ctx, 0, sizeof(*ctx));
+
+// read verbosity from settings
+ctx->verbosity = 9;
+
+  // defaults
+  ctx->log = stderr;
+// read log-filename from settings
+  ctx->command = PKOC_UTIL_REQUEST_CERTIFICATE;
+// read the command from a command line switch
+  ctx->certificate_index = 0;
+// read the certificate index from a command line switch
+
+  // initialize the sub-context(s)
+
+  ctx->sc_ctx = (void *)&my_smartcard_context;
+
+  return(status);
+
+} /* initialize_pkoc_util */
 

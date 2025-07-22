@@ -19,6 +19,7 @@ typedef struct pkoc_util_context
 #define PKOC_TRANSACTION_IDENTIFIER_MAX (65)
 #define PKOC_READER_IDENTIFIER_LENGTH   (32)
 
+#define STPKOC_UNKNOWN_COMMAND ( 1)
 
 int pkoc_request_certificate
   (PKOC_UTIL_CONTEXT *ctx,

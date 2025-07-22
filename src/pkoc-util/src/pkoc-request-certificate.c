@@ -62,6 +62,11 @@ int param_transaction_length;
   };
   if (status EQUALS ST_OK)
   {
+    if (ctx->verbosity > 3)
+    {
+      eac_encode_dump_buffer("PKOC Authenticate Command:\n", payload, payload_lth);
+    };
+
     // PKOC Auth CLA 80 INS 80 P1 0 P2 1 Lc lth data Le 0
 
     ret_lth = sizeof(returned_apdu);
@@ -69,6 +74,10 @@ int param_transaction_length;
       payload_lth, 0x00, payload, returned_apdu, &ret_lth, ACTION_WAIT);
     if (ctx->verbosity > 3)
       fprintf(LOG, "sc_sendrcv returned %d.\n", status);
+  };
+  if (status EQUALS ST_OK)
+  {
+    eac_encode_dump_buffer("PKOC Authenticate Response:\n", returned_apdu, ret_lth);
   };
 
   if (status != ST_OK)
