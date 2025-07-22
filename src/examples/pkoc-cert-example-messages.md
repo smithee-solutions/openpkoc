@@ -142,3 +142,11 @@ godgKRbyL8ekK4WrTbaI0MMCus8X0+mxT6Lj3Q==
 -----END CERTIFICATE-----
 ```
 
+\newpage {}
+
+# punchlist #
+
+- Le at end of example
+- fill in transaction identifier components
+- proper example response filled in with not-bogus values
+

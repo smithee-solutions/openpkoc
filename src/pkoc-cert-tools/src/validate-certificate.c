@@ -15,16 +15,24 @@ int verbosity;
 
 
 // Function to load a certificate from a file
-X509* load_certificate(const char* cert_file) {
-    BIO *certbio = NULL;
-    X509 *cert = NULL;
+X509 *load_certificate
+  (const char* cert_file)
+
+{
+//X509* load_certificate(const char* cert_file) {
+  X509 *cert;
+  BIO *certbio;
+
+  certbio = NULL;
+  cert = NULL;
     certbio = BIO_new(BIO_s_file());
     if (BIO_read_filename(certbio, cert_file) <= 0) {
         fprintf(stderr, "Error opening certificate file: %s\n", cert_file);
         BIO_free_all(certbio);
         return NULL;
     }
-    cert = PEM_read_bio_X509(certbio, NULL, 0, NULL);
+  cert = d2i_X509_bio(certbio, NULL);
+//    cert = PEM_read_bio_X509(certbio, NULL, 0, NULL);
     if (!cert) {
         fprintf(stderr, "Error reading certificate from file\n");
         BIO_free_all(certbio);
@@ -91,7 +99,7 @@ int main
 {
   X509 *cert;
   char cert_file [1024];
-  const char* issuer_cert_file = "attestation-signer.pem";
+  const char* issuer_cert_file = "attestation-signer.der";
   int status;
   int status_openssl;
 

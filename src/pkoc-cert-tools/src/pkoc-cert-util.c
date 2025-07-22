@@ -16,11 +16,9 @@ unsigned char SELECT_PKOC [] =
 //if status good continue
 
 
-
-
 int main
   (int argc,
-  char *arg [])
+  char *argv [])
 
 { /* main for pkoc-cert-loader */
 
@@ -28,6 +26,7 @@ int main
   int cert_length;
   FILE *cfile; // for certificate
   OB_CONTEXT *ctx;
+  int idx;
   OB_CONTEXT my_context;
   int payload_length;
   unsigned char receive_buffer [OB_STRING_MAX];
@@ -41,9 +40,14 @@ int main
   status = ST_OK;
   ctx = &my_context;
   memset(ctx, 0, sizeof(*ctx));
+ctx->log = stderr;
 ctx->verbosity = 9;
 ctx->reader_index = 1;
 strcpy(ctx->cert_filename, "cert.der");
+if (argc > 1)
+{
+  strcpy(ctx->cert_filename, argv [1]);
+};
 
   fprintf(stderr, "PKOC Certificate Loader %s\n", PKOC_CERT_LOADER_VERSION);
   fprintf(stderr, "Reader %d Cert file %s\n", ctx->reader_index, ctx->cert_filename);
@@ -76,9 +80,15 @@ strcpy(ctx->cert_filename, "cert.der");
     if (ctx->verbosity > 3)
       ob_dump_buffer(ctx, LOG_STDERR, "PKOC Select Response:", receive_buffer, receive_length);
 
-    cfile = fopen("cert.der", "r");
+    if (ctx->verbosity > 3)
+      fprintf(ctx->log, "Accessing DER-encoded certificate %s\n", ctx->cert_filename);
+    cfile = fopen(ctx->cert_filename, "r");
     if (cfile EQUALS NULL)
+    {
       status = STOB_FILE_ERROR;
+      if (ctx->verbosity > 3)
+        fprintf(ctx->log, "error opening certificate file.\n");
+    };
   };
   if (status EQUALS ST_OK)
   {
@@ -96,8 +106,12 @@ strcpy(ctx->cert_filename, "cert.der");
     smartcard_command [8] = 0x82; // DER length will be 82 xx xx
     smartcard_command [ 9] = (0xFF00 & cert_length) >> 8;
     smartcard_command [10] = 0x00ff & cert_length;
-    memcpy(smartcard_command+11, cert_buffer, cert_length);
-    smartcard_command_length = 11 + cert_length;
+    idx = 10;
+    idx++;
+    memcpy(smartcard_command+idx, cert_buffer, cert_length);
+    idx = idx + cert_length;
+    smartcard_command [idx] = 0; // Le
+    smartcard_command_length = 11 + cert_length + 1;
     if (ctx->verbosity > 3)
       ob_dump_buffer(ctx, LOG_STDERR, "PKOC put-certificate:", smartcard_command, smartcard_command_length);
   };
