@@ -3,7 +3,7 @@ PROGS=pkoc-util validate-certificate
 CC=clang
 CFLAGS=-c -g -I. -I../include -I/opt/openbadger/include -I/usr/include/PCSC -Wall -Werror
 LINK=clang
-LDFLAGS=-g -lpcsclite
+LDFLAGS=-g -L/opt/openbadger/lib -leac-7816 -lpcsclite
 
 all:	${PROGS}
 
