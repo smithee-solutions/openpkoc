@@ -16,11 +16,11 @@ unsigned char SELECT_PKOC [] =
 //if status good continue
 
 
-int main
+int pkoc_load_certificate
   (int argc,
   char *argv [])
 
-{ /* main for pkoc-cert-loader */
+{ /* pkoc_load_certificate */
 
   unsigned char cert_buffer [8192];
   int cert_length;
@@ -120,5 +120,5 @@ if (argc > 1)
     fprintf(stderr, "pkoc-cert-loader exit status was %d.\n", status);
   return(status);
 
-} /* main for pkoc-cert-loader */
+} /* pkoc_load_certificate */
 

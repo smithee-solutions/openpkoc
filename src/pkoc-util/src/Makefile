@@ -1,0 +1,38 @@
+PROGS=pkoc-util validate-certificate
+
+CC=clang
+CFLAGS=-c -g -I. -I../include -I/opt/openbadger/include -I/usr/include/PCSC -Wall -Werror
+LINK=clang
+LDFLAGS=-g -lpcsclite
+
+all:	${PROGS}
+
+clean:
+	rm -f core ${PROGS} *.o core
+
+pkoc-util:	pkoc-util.o Makefile \
+	  ob-stub.o pkoc-load-certificate.o pkoc-request-certificate.o pkoc-setup.o
+	${LINK} -o pkoc-util pkoc-util.o ob-stub.o \
+	  pkoc-load-certificate.o pkoc-request-certificate.o pkoc-setup.o ${LDFLAGS}
+
+validate-certificate:	validate-certificate.o Makefile
+	${LINK} -o validate-certificate validate-certificate.o ${LDFLAGS} -lcrypto
+
+ob-stub.o:	ob-stub.c
+	${CC} ${CFLAGS} ob-stub.c
+
+pkoc-load-certificate.o:	pkoc-load-certificate.c
+	${CC} ${CFLAGS} pkoc-load-certificate.c
+
+pkoc-request-certificate.o:	pkoc-request-certificate.c
+	${CC} ${CFLAGS} pkoc-request-certificate.c
+
+pkoc-setup.o:	pkoc-setup.c
+	${CC} ${CFLAGS} pkoc-setup.c
+
+pkoc-util.o:	pkoc-util.c
+	${CC} ${CFLAGS} pkoc-util.c
+
+validate-certificate.o:	validate-certificate.c
+	${CC} ${CFLAGS} validate-certificate.c
+

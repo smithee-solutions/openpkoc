@@ -1,0 +1,2 @@
+#define PKOC_CERT_UTIL_VERSION "0.10"
+

@@ -31,4 +31,5 @@ typedef struct openbadger_context
 
 void ob_dump_buffer(OB_CONTEXT *ctx, int output_destination, char *label, unsigned char *buffer, int buffer_length);
 int ob_init_smartcard(OB_CONTEXT *ctx);
+int pkoc_load_certificate(int argc, char *argv []);
 
