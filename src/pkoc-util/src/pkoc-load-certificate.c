@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 
 #include <PCSC/wintypes.h>
@@ -7,7 +8,12 @@
 #include <PCSC/winscard.h>
 
 
-#include <loader.h>
+#include <openbadger-common.h>
+#include <eac-encode.h>
+#include <ob-stub.h>
+#include <pkoc-util.h>
+
+
 unsigned char SELECT_PKOC [] = 
   {0x00, 0xa4, 0x04, 0x00, 0x08, 0xA0, 0x00, 0x00, 0x08, 0x98, 0x00, 0x00, 0x01, 0x00};
 
@@ -17,7 +23,8 @@ unsigned char SELECT_PKOC [] =
 
 
 int pkoc_load_certificate
-  (int argc,
+  (PKOC_UTIL_CONTEXT *ctx,
+  int argc,
   char *argv [])
 
 { /* pkoc_load_certificate */
@@ -25,36 +32,37 @@ int pkoc_load_certificate
   unsigned char cert_buffer [8192];
   int cert_length;
   FILE *cfile; // for certificate
-  OB_CONTEXT *ctx;
   int idx;
-  OB_CONTEXT my_context;
+  OB_CONTEXT ob_context;
   int payload_length;
-  unsigned char receive_buffer [OB_STRING_MAX];
+  unsigned char receive_buffer [EAC_STRING_MAX];
   DWORD receive_length;
-  unsigned char smartcard_command [OB_STRING_MAX];
+  unsigned char smartcard_command [EAC_STRING_MAX];
+  EAC_SMARTCARD_CONTEXT_EX smartcard;
   int smartcard_command_length;
   int status;
   DWORD status_pcsc;
 
 
   status = ST_OK;
-  ctx = &my_context;
-  memset(ctx, 0, sizeof(*ctx));
-ctx->log = stderr;
-ctx->verbosity = 9;
-ctx->reader_index = 1;
+  memset(&smartcard, 0, sizeof(smartcard));
+  smartcard.log = ctx->log;
+  smartcard.verbosity = ctx->verbosity;
+  smartcard.reader_index = ctx->reader_index;
+  memset(&ob_context, 0, sizeof(ob_context));
+  ob_context.log = ctx->log;
+  ob_context.verbosity = ctx->verbosity;
 strcpy(ctx->cert_filename, "cert.der");
 if (argc > 1)
 {
   strcpy(ctx->cert_filename, argv [1]);
 };
 
-  fprintf(stderr, "PKOC Certificate Loader %s\n", PKOC_CERT_LOADER_VERSION);
   fprintf(stderr, "Reader %d Cert file %s\n", ctx->reader_index, ctx->cert_filename);
 
   if (status EQUALS ST_OK)
   {
-    status = ob_init_smartcard(ctx);
+    status = ob_init_smartcard_ex(&smartcard);
   };
   if (status EQUALS ST_OK)
   {
@@ -64,28 +72,34 @@ if (argc > 1)
   if (status EQUALS ST_OK)
   {
     if (ctx->verbosity > 3)
-      ob_dump_buffer(ctx, LOG_STDERR, "PKOC Select:", smartcard_command, smartcard_command_length);
+    {
+      fprintf(ctx->log, "PKOC Select");
+      ob_dump_buffer(&ob_context, smartcard_command, smartcard_command_length, 0);
+    };
 
     // send application select to card
 
     receive_length = sizeof(receive_buffer);
-    status_pcsc = SCardTransmit(ctx->pcsc, &ctx->pioSendPci, smartcard_command, smartcard_command_length, NULL, receive_buffer, &receive_length);
-    ctx->last_pcsc_status = status_pcsc;
+    status_pcsc = SCardTransmit(smartcard.pcsc, &smartcard.pioSendPci, smartcard_command, smartcard_command_length, NULL, receive_buffer, &receive_length);
+    smartcard.last_pcsc_status = status_pcsc;
     if (SCARD_S_SUCCESS != status_pcsc)
-      status = STOB_PCSC_TRANSMIT_1;
+      status = STEAC_PCSC_TRANSMIT_1;
   };
 
   if (status EQUALS ST_OK)
   {
     if (ctx->verbosity > 3)
-      ob_dump_buffer(ctx, LOG_STDERR, "PKOC Select Response:", receive_buffer, receive_length);
+    {
+      fprintf(ctx->log, "PKOC Select Response:");
+      ob_dump_buffer(&ob_context, receive_buffer, receive_length, 0);
+    };
 
     if (ctx->verbosity > 3)
       fprintf(ctx->log, "Accessing DER-encoded certificate %s\n", ctx->cert_filename);
     cfile = fopen(ctx->cert_filename, "r");
     if (cfile EQUALS NULL)
     {
-      status = STOB_FILE_ERROR;
+      status = STEAC_FILE_ERROR;
       if (ctx->verbosity > 3)
         fprintf(ctx->log, "error opening certificate file.\n");
     };
@@ -113,7 +127,10 @@ if (argc > 1)
     smartcard_command [idx] = 0; // Le
     smartcard_command_length = 11 + cert_length + 1;
     if (ctx->verbosity > 3)
-      ob_dump_buffer(ctx, LOG_STDERR, "PKOC put-certificate:", smartcard_command, smartcard_command_length);
+    {
+      fprintf(ctx->log, "PKOC put-certificate:");
+      ob_dump_buffer(&ob_context, smartcard_command, smartcard_command_length, 0);
+    };
   };
 
   if (status != ST_OK)

@@ -8,7 +8,10 @@
 #include <PCSC/winscard.h>
 
 
-#include <loader.h>
+#include <openbadger-common.h>
+
+// not quite stablized using openbadger and libeac-encode
+#include <ob-stub.h>
 
 
 /*
@@ -18,8 +21,8 @@
   uses ctx->verbosity to control logging
 */
 
-int ob_init_smartcard
-  (OB_CONTEXT *ctx)
+int ob_init_smartcard_ex
+  (EAC_SMARTCARD_CONTEXT_EX *ctx)
 
 { /* ob_init_smartcard */
 
@@ -45,7 +48,7 @@ int ob_init_smartcard
     fprintf(stderr, "DEBUG: SCardEstablishContext return value was %lX\n", status_pcsc);
   };
   if (status_pcsc != SCARD_S_SUCCESS)
-    status = STOB_SCARD_ESTABLISH;
+    status = STEAC_SCARD_ESTABLISH;
 
   if (status EQUALS ST_OK)
   {
@@ -53,14 +56,14 @@ int ob_init_smartcard
 
   status_pcsc = SCardListReaders (ctx->hContext, NULL, NULL, &reader_names_list_size);
   if (status_pcsc != SCARD_S_SUCCESS)
-    status = STOB_SCARD_ERROR;
+    status = STEAC_SCARD_ERROR;
 
   // enumerate to the log all reader names, until we find the one we want
 
   mszReaders = calloc(reader_names_list_size, sizeof(char));
   status_pcsc = SCardListReaders (ctx->hContext, NULL, mszReaders, &reader_names_list_size);
   if (status_pcsc != SCARD_S_SUCCESS)
-    status = STOB_SCARD_ERROR;
+    status = STEAC_SCARD_ERROR;
   };
   if (status EQUALS ST_OK)
   {
@@ -96,7 +99,7 @@ int ob_init_smartcard
   {
     status_pcsc = SCardConnect (ctx->hContext, ctx->reader_name, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &(ctx->pcsc), &dwActiveProtocol);
     if (SCARD_S_SUCCESS != status_pcsc)
-      status = STOB_SCARD_CONNECT;
+      status = STEAC_SCARD_CONNECT;
   };
   if (status EQUALS ST_OK)
   {
@@ -121,41 +124,4 @@ int ob_init_smartcard
   return(status);
 
 } /* ob_init_smartcard */
-
-
-void ob_dump_buffer
-  (OB_CONTEXT *ctx,
-  int output_destination,
-  char *label,
-  unsigned char *buffer,
-  int buffer_length)
-
-{
-
-  FILE *f;
-  int i;
-  int octets_per_line = 16;
-
-  switch (output_destination)
-  {
-  case 0:
-    f = stdout;
-    break;
-  case LOG_STDERR:
-    f = stderr;
-    break;
-  case 2:
-    f = ctx->log;
-    break;
-  };
-  fprintf(f, "%s\n", label);
-  for (i=0; i<buffer_length; i++)
-  {
-    fprintf(f, " %02X", buffer [i]);
-    if (!((i+1) % octets_per_line))
-      fprintf(f, "\n");
-  };
-  if (buffer_length % octets_per_line)
-    fprintf(f, "\n");
-}
 

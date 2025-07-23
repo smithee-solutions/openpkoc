@@ -1,0 +1,2 @@
+dump buffer harmonize.  tag first, dest too.  in encode not openbadger
+

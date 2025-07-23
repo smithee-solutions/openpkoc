@@ -5,8 +5,11 @@ typedef struct pkoc_util_context
   int verbosity;
   int command;
   FILE *log;
+  char cert_filename [EAC_STRING_MAX];
   int certificate_index;
   void *sc_ctx;
+  int smartcard_subsystem;
+  int reader_index;
 } PKOC_UTIL_CONTEXT;
 
 #define PKOC_TAG_TRANSACTION_IDENTIFIER (0x4C)
@@ -21,13 +24,9 @@ typedef struct pkoc_util_context
 
 #define STPKOC_UNKNOWN_COMMAND ( 1)
 
-int pkoc_request_certificate
-  (PKOC_UTIL_CONTEXT *ctx,
-  int cert_index);
-int setup_pkoc_authenticate(PKOC_UTIL_CONTEXT *ctx,
-  unsigned char *buffer, int *buffer_length,
-  unsigned char *transaction_id, int xtn_id_lth,
-  unsigned char *protocol_version, int ver_lth,
-  unsigned char *reader_identifier,
-  int cert_index);
+int pkoc_load_certificate(PKOC_UTIL_CONTEXT *ctx, int argc, char *argv []);
+int pkoc_request_certificate(PKOC_UTIL_CONTEXT *ctx, int cert_index);
+int setup_pkoc_authenticate(PKOC_UTIL_CONTEXT *ctx, unsigned char *buffer, int *buffer_length,
+  unsigned char *transaction_id, int xtn_id_lth, unsigned char *protocol_version, int ver_lth,
+  unsigned char *reader_identifier, int cert_index);
 

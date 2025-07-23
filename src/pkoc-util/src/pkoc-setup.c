@@ -5,8 +5,14 @@
 #include <string.h>
 
 
+#include <PCSC/wintypes.h>
+#include <PCSC/pcsclite.h>
+#include <PCSC/winscard.h>
+
+
 #include <eac-encode.h>
 #include <eac-smartcard.h>
+#include <ob-stub.h>
 #include <pkoc-util.h>
 
 

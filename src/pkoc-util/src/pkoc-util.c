@@ -1,3 +1,7 @@
+/*
+  pkoc-util - pkoc NFC credential manipulation utility
+*/
+
 #include <stdio.h>
 #include <string.h>
 
@@ -11,11 +15,13 @@
 #define PKOC_UTIL_LOAD_CERTIFICATE    (2)
 
 
-#include <loader.h>
+#include <eac-encode.h>
 #include <eac-smartcard.h>
+#include <ob-stub.h>
 #include <pkoc-util.h>
 #include <pkoc-util-version.h>
 int initialize_pkoc_util(PKOC_UTIL_CONTEXT *ctx);
+EAC_SMARTCARD_CONTEXT my_smartcard_context;
 
 
 int main
@@ -47,7 +53,9 @@ int main
     status = pkoc_request_certificate(ctx, ctx->certificate_index);
     break;
   case PKOC_UTIL_LOAD_CERTIFICATE:
-    status = pkoc_load_certificate(argc, argv);
+fprintf(stderr, "DEBUG: reader index hard-coded to 1\n");
+ctx->reader_index = 1;
+    status = pkoc_load_certificate(ctx, argc, argv);
     break;
   default:
     status = STPKOC_UNKNOWN_COMMAND;
@@ -66,7 +74,6 @@ int initialize_pkoc_util
 
 { /* initialize_pkoc_util */
 
-  EAC_SMARTCARD_CONTEXT my_smartcard_context;
   int status;
 
 
@@ -86,6 +93,7 @@ ctx->verbosity = 9;
 
   // initialize the sub-context(s)
 
+  ctx->smartcard_subsystem = SC_SUBSYSTEM_SIMULATOR;
   ctx->sc_ctx = (void *)&my_smartcard_context;
 
   return(status);
