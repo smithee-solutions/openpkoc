@@ -20,7 +20,6 @@ int main
   SMARTCARD_CONTEXT *ctx;
   SMARTCARD_CONTEXT my_context;
   unsigned char payload [8192];
-int param_transaction_length;
   int payload_lth;
   unsigned char protocol_version [255];
   unsigned char reader_identifier [32];

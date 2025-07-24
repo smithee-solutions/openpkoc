@@ -1,0 +1,7 @@
+{
+  "verbosity":"9",
+  "reader":"1",
+  "subsystem":"1",
+  "transaction-identifier-length":"16"
+}
+

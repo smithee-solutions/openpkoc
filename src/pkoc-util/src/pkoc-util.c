@@ -80,11 +80,10 @@ int initialize_pkoc_util
   status = ST_OK;
   memset(ctx, 0, sizeof(*ctx));
 
-// read verbosity from settings
-ctx->verbosity = 9;
-
   // defaults
+  ctx->verbosity = 3;
   ctx->log = stderr;
+  ctx->smartcard_subsystem = SC_SUBSYSTEM_SIMULATOR;
 // read log-filename from settings
   ctx->command = PKOC_UTIL_REQUEST_CERTIFICATE;
 // read the command from a command line switch
@@ -93,9 +92,13 @@ ctx->verbosity = 9;
 
   // initialize the sub-context(s)
 
-  ctx->smartcard_subsystem = SC_SUBSYSTEM_SIMULATOR;
   ctx->sc_ctx = (void *)&my_smartcard_context;
 
+  // read the settings file
+  if (status EQUALS ST_OK)
+  {
+    status = pkoc_util_read_settings(ctx);
+  };
   return(status);
 
 } /* initialize_pkoc_util */

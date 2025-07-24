@@ -3,7 +3,7 @@ PROGS=pkoc-util validate-certificate
 CC=clang
 CFLAGS=-c -D SIMULATE_PKOC -g -I. -I../include -I/opt/openbadger/include -I/usr/include/PCSC -Wall -Werror
 LINK=clang
-LDFLAGS=-g -L/opt/openbadger/lib -leac-7816 -leac-encode -leac-crypto_stub -lopenbadger -lpcsclite
+LDFLAGS=-g -L/opt/openbadger/lib -leac-7816 -leac-encode -leac-crypto_stub -lopenbadger -lpcsclite -ljansson
 
 all:	${PROGS}
 
@@ -12,9 +12,10 @@ clean:
 
 pkoc-util:	pkoc-util.o Makefile \
 	  ob-stub.o pkoc-load-certificate.o pkoc-request-certificate.o pkoc-setup.o \
+	  pkoc-util-settings.o \
 	  simulate-smartcard.o
 	${LINK} -o pkoc-util pkoc-util.o ob-stub.o \
-	  pkoc-load-certificate.o pkoc-request-certificate.o pkoc-setup.o \
+	  pkoc-load-certificate.o pkoc-request-certificate.o pkoc-setup.o pkoc-util-settings.o \
 	  simulate-smartcard.o ${LDFLAGS}
 
 validate-certificate:	validate-certificate.o Makefile
@@ -34,6 +35,9 @@ pkoc-setup.o:	pkoc-setup.c
 
 pkoc-util.o:	pkoc-util.c
 	${CC} ${CFLAGS} pkoc-util.c
+
+pkoc-util-settings.o:	pkoc-util-settings.c
+	${CC} ${CFLAGS} pkoc-util-settings.c
 
 simulate-smartcard.o:	simulate-smartcard.c
 	${CC} ${CFLAGS} simulate-smartcard.c

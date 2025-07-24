@@ -1,5 +1,8 @@
 // pkoc-util.h
 
+
+#define PKOC_UTIL_SETTINGS_FILE "pkoc-util-settings.json"
+
 typedef struct pkoc_util_context
 {
   int verbosity;
@@ -10,6 +13,7 @@ typedef struct pkoc_util_context
   void *sc_ctx;
   int smartcard_subsystem;
   int reader_index;
+  int transaction_length;
 } PKOC_UTIL_CONTEXT;
 
 #define PKOC_TAG_TRANSACTION_IDENTIFIER (0x4C)
@@ -26,6 +30,7 @@ typedef struct pkoc_util_context
 
 int pkoc_load_certificate(PKOC_UTIL_CONTEXT *ctx, int argc, char *argv []);
 int pkoc_request_certificate(PKOC_UTIL_CONTEXT *ctx, int cert_index);
+int pkoc_util_read_settings(PKOC_UTIL_CONTEXT *ctx);
 int setup_pkoc_authenticate(PKOC_UTIL_CONTEXT *ctx, unsigned char *buffer, int *buffer_length,
   unsigned char *transaction_id, int xtn_id_lth, unsigned char *protocol_version, int ver_lth,
   unsigned char *reader_identifier, int cert_index);
