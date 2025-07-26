@@ -29,6 +29,7 @@ int pkoc_util_read_settings
 
 { /* pkoc_util_read_settings */
 
+  extern char *certificate_filename;
   int i;
   json_t *root;
   char settings_filename [1024];
@@ -68,6 +69,12 @@ int pkoc_util_read_settings
     };
     if (ctx->verbosity > 3)
       fprintf(ctx->log, "reading settings from %s\n", settings_filename);
+
+    value = json_object_get (root, "certificate-file");
+    if (json_is_string (value))
+    {
+      strcpy(ctx->certificate_filename, json_string_value(value));
+    };
 
     value = json_object_get (root, "reader");
     if (json_is_string (value))

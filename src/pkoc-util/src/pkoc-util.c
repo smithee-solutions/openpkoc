@@ -22,6 +22,7 @@
 #include <pkoc-util-version.h>
 int initialize_pkoc_util(PKOC_UTIL_CONTEXT *ctx);
 EAC_SMARTCARD_CONTEXT my_smartcard_context;
+SC_SIMULATOR_CONTEXT my_simulator_context;
 
 
 int main
@@ -49,6 +50,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(ctx->log, "Performing Request Certificate\n");
+      fprintf(ctx->log, "Certificate file %s\n", ctx->certificate_filename);
     };
     status = pkoc_request_certificate(ctx, ctx->certificate_index);
     break;
@@ -87,6 +89,7 @@ int initialize_pkoc_util
 // read log-filename from settings
   ctx->command = PKOC_UTIL_REQUEST_CERTIFICATE;
 // read the command from a command line switch
+  strcpy(ctx->certificate_filename, "attestation-cert.der");
   ctx->certificate_index = 0;
 // read the certificate index from a command line switch
 

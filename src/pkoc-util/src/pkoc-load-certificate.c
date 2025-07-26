@@ -52,13 +52,8 @@ int pkoc_load_certificate
   memset(&ob_context, 0, sizeof(ob_context));
   ob_context.log = ctx->log;
   ob_context.verbosity = ctx->verbosity;
-strcpy(ctx->cert_filename, "cert.der");
-if (argc > 1)
-{
-  strcpy(ctx->cert_filename, argv [1]);
-};
 
-  fprintf(stderr, "Reader %d Cert file %s\n", ctx->reader_index, ctx->cert_filename);
+  fprintf(stderr, "Reader %d Cert file %s\n", ctx->reader_index, ctx->certificate_filename);
 
   if (status EQUALS ST_OK)
   {
@@ -95,8 +90,8 @@ if (argc > 1)
     };
 
     if (ctx->verbosity > 3)
-      fprintf(ctx->log, "Accessing DER-encoded certificate %s\n", ctx->cert_filename);
-    cfile = fopen(ctx->cert_filename, "r");
+      fprintf(ctx->log, "Accessing DER-encoded certificate %s\n", ctx->certificate_filename);
+    cfile = fopen(ctx->certificate_filename, "r");
     if (cfile EQUALS NULL)
     {
       status = STEAC_FILE_ERROR;

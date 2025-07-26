@@ -14,6 +14,7 @@
 #include <eac-smartcard.h>
 #include <ob-stub.h>
 #include <pkoc-util.h>
+int sc_simulator_init(EAC_SMARTCARD_CONTEXT *ctx, SC_SIMULATOR_CONTEXT *sim_ctx);
 
 
 int pkoc_request_certificate
@@ -22,8 +23,8 @@ int pkoc_request_certificate
 
 { /* pkoc_request_certificate */
 
+  extern SC_SIMULATOR_CONTEXT my_simulator_context;
   unsigned char payload [8192];
-int param_transaction_length;
   int payload_lth;
   unsigned char protocol_version [255];
   unsigned char reader_identifier [32];
@@ -36,20 +37,25 @@ int param_transaction_length;
 
 
   // temp hard-coded settings
-  param_transaction_length = PKOC_TRANSACTION_IDENTIFIER_MIN;
+  ctx->transaction_length = PKOC_TRANSACTION_IDENTIFIER_MIN;
 
   sc_ctx = ctx->sc_ctx;
   memset(sc_ctx, 0, sizeof(*sc_ctx));
   sc_ctx->verbosity = ctx->verbosity;
   sc_ctx->subsystem = ctx->smartcard_subsystem;
+  strcpy(my_simulator_context.certificate_filename, ctx->certificate_filename);
 
-  status = sc_init(sc_ctx);
+  status = sc_simulator_init(sc_ctx, &my_simulator_context);
+  if (status EQUALS ST_OK)
+  {
+    status = sc_init(sc_ctx);
+  };
   if (status EQUALS ST_OK)
   {
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "transaction identifier is %d. octets.\n",
-        param_transaction_length);
+        ctx->transaction_length);
     };
 
     payload_lth = sizeof(payload);
@@ -67,7 +73,7 @@ int param_transaction_length;
     reader_identifier [2] = 0xDE;
     reader_identifier [3] = 0xED;
     status = setup_pkoc_authenticate(ctx, payload, &payload_lth,
-      transaction_identifier, param_transaction_length, protocol_version, ver_lth, reader_identifier,
+      transaction_identifier, ctx->transaction_length, protocol_version, ver_lth, reader_identifier,
       cert_index);
   };
   if (status EQUALS ST_OK)
@@ -88,10 +94,6 @@ int param_transaction_length;
       payload_lth, 0x00, payload, returned_apdu, &ret_lth, ACTION_WAIT);
     if (ctx->verbosity > 3)
       fprintf(LOG, "sc_sendrcv returned %d.\n", status);
-  };
-  if (status EQUALS ST_OK)
-  {
-    eac_encode_dump_buffer("PKOC Authenticate Response:\n", returned_apdu, ret_lth);
   };
 
   if (status != ST_OK)

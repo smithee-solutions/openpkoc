@@ -8,7 +8,7 @@ typedef struct pkoc_util_context
   int verbosity;
   int command;
   FILE *log;
-  char cert_filename [EAC_STRING_MAX];
+  char certificate_filename [EAC_STRING_MAX];
   int certificate_index;
   void *sc_ctx;
   int smartcard_subsystem;
