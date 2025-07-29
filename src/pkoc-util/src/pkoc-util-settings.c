@@ -31,6 +31,7 @@ int pkoc_util_read_settings
 
   extern char *certificate_filename;
   int i;
+  int returned_length;
   json_t *root;
   char settings_filename [1024];
   int settings_found;
@@ -81,6 +82,20 @@ int pkoc_util_read_settings
     {
       sscanf(json_string_value(value), "%d", &i);
       ctx->reader_index = i;
+    };
+
+    value = json_object_get(root, "reader-location-identifier");
+    if (json_is_string(value))
+    {
+      returned_length = sizeof(ctx->reader_location_identifier);
+      status = eac_encode_hex_string_to_bytes((char *)json_string_value(value), ctx->reader_location_identifier, &returned_length);
+    };
+
+    value = json_object_get(root, "site-key-identifier");
+    if (json_is_string(value))
+    {
+      returned_length = sizeof(ctx->site_key_identifier);
+      status = eac_encode_hex_string_to_bytes((char *)json_string_value(value), ctx->site_key_identifier, &returned_length);
     };
 
     value = json_object_get (root, "subsystem");

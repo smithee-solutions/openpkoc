@@ -73,11 +73,14 @@ int setup_pkoc_authenticate
   // tag,length,value - reader identifier
   *p = PKOC_TAG_READER_IDENTIFIER;
   p++; plth++;
-  *p = PKOC_READER_IDENTIFIER_LENGTH;
+  *p = sizeof(ctx->site_key_identifier) + sizeof(ctx->reader_location_identifier);
   p++; plth++;
-  memcpy(p, reader_identifier, PKOC_READER_IDENTIFIER_LENGTH);
-  p = p + PKOC_READER_IDENTIFIER_LENGTH;
-  plth = plth + PKOC_READER_IDENTIFIER_LENGTH;
+  memcpy(p, ctx->site_key_identifier, sizeof(ctx->site_key_identifier));
+  p = p + sizeof(ctx->site_key_identifier);
+  plth = plth + sizeof(ctx->site_key_identifier);
+  memcpy(p, ctx->reader_location_identifier, sizeof(ctx->reader_location_identifier));
+  p = p + sizeof(ctx->reader_location_identifier);
+  plth = plth + sizeof(ctx->reader_location_identifier);
 
 #ifdef SIMULATE_PKOC
 

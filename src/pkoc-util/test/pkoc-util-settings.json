@@ -1,4 +1,8 @@
 {
+"Zcertificate-file":"card2-cert.der",
+"certificate-file":"debug-card.der",
+"site-key-identifier":"AABBCCDDAABBCCDDAABBCCDDAABBCCDD",
+"reader-location-identifier":"55AA55AA55AA55AA55AA55AA55AA55AA",
   "verbosity":"9",
   "reader":"1",
   "subsystem":"1",

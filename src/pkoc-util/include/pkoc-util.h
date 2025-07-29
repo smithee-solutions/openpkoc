@@ -3,6 +3,10 @@
 
 #define PKOC_UTIL_SETTINGS_FILE "pkoc-util-settings.json"
 
+#define PKOC_TRANSACTION_IDENTIFIER_MIN (16)
+#define PKOC_TRANSACTION_IDENTIFIER_MAX (65)
+#define PKOC_SITE_KEY_IDENTIFIER        (16)
+#define PKOC_READER_LOCATION_IDENTIFIER (16)
 typedef struct pkoc_util_context
 {
   int verbosity;
@@ -14,6 +18,8 @@ typedef struct pkoc_util_context
   int smartcard_subsystem;
   int reader_index;
   int transaction_length;
+  unsigned char site_key_identifier [PKOC_SITE_KEY_IDENTIFIER];
+  unsigned char reader_location_identifier [PKOC_READER_LOCATION_IDENTIFIER];
 } PKOC_UTIL_CONTEXT;
 
 #define PKOC_TAG_TRANSACTION_IDENTIFIER (0x4C)
@@ -22,9 +28,6 @@ typedef struct pkoc_util_context
 #define PKOC_TAG_PROTOCOL_VERSION       (0x5C)
 #define PKOC_TAG_DIGITAL_SIGNATURE      (0x9E)
 
-#define PKOC_TRANSACTION_IDENTIFIER_MIN (16)
-#define PKOC_TRANSACTION_IDENTIFIER_MAX (65)
-#define PKOC_READER_IDENTIFIER_LENGTH   (32)
 
 #define STPKOC_UNKNOWN_COMMAND ( 1)
 
