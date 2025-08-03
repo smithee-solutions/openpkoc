@@ -19,6 +19,7 @@
 #include <PCSC/winscard.h>
 
 
+#include <pkoc-parameters.h>
 #include <eac-encode.h>
 #include <eac-smartcard.h>
 #include <ob-stub.h>
@@ -50,7 +51,9 @@ int load_cert_file
   SC_SIMULATOR_CONTEXT *sim_ctx,
   unsigned char *cert_buffer,
   int *cert_buffer_length)
-{
+
+{ /* load_cert_file */
+
   FILE *cfile;
   int status;
 
@@ -73,7 +76,41 @@ int load_cert_file
       status= STEAC_FILE_ERROR;
   };
   return(status);
-}
+
+} /* load_cert_file */
+
+
+int load_public_key_file
+  (EAC_SMARTCARD_CONTEXT *ctx,
+  SC_SIMULATOR_CONTEXT *sim_ctx,
+  unsigned char *pubkey_buffer,
+  int *pubkey_buffer_length)
+
+{ /* load_public_key_file */
+
+  FILE *pfile;
+  int status;
+
+
+  status = ST_OK;
+  if (ctx->verbosity > 3)
+    fprintf(stderr, "Accessing DER-encoded public key %s\n", sim_ctx->public_key_filename);
+  pfile = fopen(sim_ctx->public_key_filename, "r");
+  if (pfile EQUALS NULL)
+  {
+    status = STEAC_FILE_ERROR;
+    if (ctx->verbosity > 3)
+      fprintf(LOG, "error opening PKOC public key file.\n");
+  };
+  if (status EQUALS ST_OK)
+  {
+    *pubkey_buffer_length = fread(pubkey_buffer, sizeof(*pubkey_buffer), *pubkey_buffer_length, pfile);
+    if (*pubkey_buffer_length < 1)
+      status= STEAC_FILE_ERROR;
+  };
+  return(status);
+
+} /* load_public_key_file */
 
 
 int sc_simulator_init
@@ -105,6 +142,8 @@ int simulate_smartcard
   unsigned char cert_buffer [8192];
   int cert_buffer_length;
   int match_authenticate;
+  unsigned char pubkey_buffer [8192];
+  int pubkey_buffer_length;
   int ret_idx;
   int status;
 
@@ -127,18 +166,21 @@ int simulate_smartcard
 {
   // fixed response and tag for cert
   unsigned char fixed_response [] = {
-    0x5A, 0x04, 0x11, 0x22, 0x33, 0x44,
-    0x9E, 0x04, 0xaa, 0xbb, 0xcc, 0xdd,
-    0xF8};
+    0x9E, 0x04, 0xaa, 0xbb, 0xcc, 0xdd
+  };
 
   cert_buffer_length = sizeof(cert_buffer);
   status = load_cert_file(ctx, sim_ctx, cert_buffer, &cert_buffer_length);
+  pubkey_buffer_length = sizeof(pubkey_buffer);
+  status = load_public_key_file(ctx, sim_ctx, pubkey_buffer, &pubkey_buffer_length);
 
   if (status EQUALS ST_OK)
   {
     ret_idx = 0;
     memcpy(ret_apdu, fixed_response, sizeof(fixed_response));
     ret_idx = ret_idx + sizeof(fixed_response);
+    ret_apdu [ret_idx] = PKOC_TAG_ATTESTATION_CERT;
+    ret_idx++;
     ret_apdu [ret_idx] = 0x82; // assume der encoding of 2-octet length
     ret_idx++;
     ret_apdu [ret_idx] = (cert_buffer_length & 0xff00) >> 8;
@@ -151,6 +193,16 @@ int simulate_smartcard
     ret_idx++;
     ret_apdu [ret_idx] = 0x00;
     ret_idx++;
+    ret_apdu [ret_idx] = PKOC_TAG_UNCOMP_PUBLIC_KEY;
+    ret_idx++;
+    ret_apdu [ret_idx] = 0x82; // assume der encoding of 2-octet length
+    ret_idx++;
+    ret_apdu [ret_idx] = (pubkey_buffer_length & 0xff00) >> 8;
+    ret_idx++;
+    ret_apdu [ret_idx] = 0xff & pubkey_buffer_length;
+    ret_idx++;
+    memcpy(ret_apdu + ret_idx, pubkey_buffer, pubkey_buffer_length);
+    ret_idx = ret_idx + pubkey_buffer_length;
     *ret_lth = ret_idx;
   };
 }

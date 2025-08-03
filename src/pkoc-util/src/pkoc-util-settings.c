@@ -77,6 +77,12 @@ int pkoc_util_read_settings
       strcpy(ctx->certificate_filename, json_string_value(value));
     };
 
+    value = json_object_get (root, "public-key-file");
+    if (json_is_string (value))
+    {
+      strcpy(ctx->public_key_filename, json_string_value(value));
+    };
+
     value = json_object_get (root, "reader");
     if (json_is_string (value))
     {

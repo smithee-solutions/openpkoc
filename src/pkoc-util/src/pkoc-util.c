@@ -90,6 +90,7 @@ int initialize_pkoc_util
   ctx->command = PKOC_UTIL_REQUEST_CERTIFICATE;
 // read the command from a command line switch
   strcpy(ctx->certificate_filename, "attestation-cert.der");
+  strcpy(ctx->public_key_filename, "pkoc-public-key.der");
   ctx->certificate_index = 0;
 // read the certificate index from a command line switch
 

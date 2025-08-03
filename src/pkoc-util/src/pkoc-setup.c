@@ -10,6 +10,7 @@
 #include <PCSC/winscard.h>
 
 
+#include <pkoc-parameters.h>
 #include <eac-encode.h>
 #include <eac-smartcard.h>
 #include <ob-stub.h>

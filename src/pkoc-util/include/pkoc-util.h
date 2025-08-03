@@ -13,6 +13,7 @@ typedef struct pkoc_util_context
   int command;
   FILE *log;
   char certificate_filename [EAC_STRING_MAX];
+  char public_key_filename [EAC_STRING_MAX];
   int certificate_index;
   void *sc_ctx;
   int smartcard_subsystem;
@@ -21,13 +22,6 @@ typedef struct pkoc_util_context
   unsigned char site_key_identifier [PKOC_SITE_KEY_IDENTIFIER];
   unsigned char reader_location_identifier [PKOC_READER_LOCATION_IDENTIFIER];
 } PKOC_UTIL_CONTEXT;
-
-#define PKOC_TAG_TRANSACTION_IDENTIFIER (0x4C)
-#define PKOC_TAG_READER_IDENTIFIER      (0x4D)
-#define PKOC_TAG_UNCOMP_PUBLIC_KEY      (0x5A)
-#define PKOC_TAG_PROTOCOL_VERSION       (0x5C)
-#define PKOC_TAG_DIGITAL_SIGNATURE      (0x9E)
-
 
 #define STPKOC_UNKNOWN_COMMAND ( 1)
 

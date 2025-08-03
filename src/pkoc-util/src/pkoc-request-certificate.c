@@ -44,6 +44,7 @@ int pkoc_request_certificate
   sc_ctx->verbosity = ctx->verbosity;
   sc_ctx->subsystem = ctx->smartcard_subsystem;
   strcpy(my_simulator_context.certificate_filename, ctx->certificate_filename);
+  strcpy(my_simulator_context.public_key_filename, ctx->public_key_filename);
 
   status = sc_simulator_init(sc_ctx, &my_simulator_context);
   if (status EQUALS ST_OK)
