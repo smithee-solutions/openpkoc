@@ -20,12 +20,17 @@
 #include <string.h>
 
 
+#include <PCSC/wintypes.h>
+#include <PCSC/pcsclite.h>
+#include <PCSC/winscard.h>
+
+
 #include <jansson.h>
 
 
 #include <eac-encode.h>
-#include <ob-crypto.h>
 #include <openbadger-common.h>
+#include <ob-crypto.h>
 
 #include <openpkoc.h>
 

@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 
 #include <PCSC/wintypes.h>
@@ -27,8 +29,8 @@
 
 
 #include <eac-encode.h>
-#include <ob-crypto.h>
 #include <openbadger-common.h>
+#include <ob-crypto.h>
 #include <ob-7816.h>
 #include <openpkoc.h>
 
@@ -242,15 +244,13 @@ int op_verify_signature
 
 { /* op_verify_signature */
 
-  EAC_ENCODE_CONTEXT crypto_context;
   unsigned char digest [EAC_CRYPTO_SHA256_DIGEST_SIZE];
   int digest_lth;
-  EAC_ENCODE_OBJECT digest_object;
+  OB_CRYPTO_OBJECT digest_object;
   char log_message [2048];
   OB_CONTEXT openbadger_context;
-  EAC_ENCODE_OBJECT pkoc_public_key;
-  EAC_ENCODE_OBJECT signature_info;
-  EAC_ENCODE_OBJECT signature_object;
+  OB_CRYPTO_OBJECT pkoc_public_key;
+  OB_CRYPTO_OBJECT signature_object;
   int status;
 
 
@@ -261,24 +261,22 @@ int op_verify_signature
     memset(&openbadger_context, 0, sizeof(openbadger_context));
     openbadger_context.verbosity = ctx->verbosity;
     openbadger_context.log = ctx->log;
-    memset(&crypto_context, 0, sizeof(crypto_context));
-    crypto_context.verbosity = ctx->verbosity;
-    crypto_context.eac_log = eac_log;
-    status = eac_encode_allocate_object(&crypto_context, &pkoc_public_key);
+
+    pkoc_public_key.key_parameters [0] = EAC_CRYPTO_EC;
+    pkoc_public_key.key_parameters [1] = EAC_KEY_EC_CURVE_SECP256R1;
+    status = ob_crypto_initialize_key(&openbadger_context, &pkoc_public_key, OB_CRYPTO_ALG_EC, OB_CRYPTO_CURVE_SECP256R1);
     if (status EQUALS ST_OK)
-      status = eac_crypto_internal_allocate(&crypto_context, &pkoc_public_key);
-    if (status EQUALS ST_OK)
-      status = eac_crypto_digest_init(&crypto_context, &digest_object);
+      status = ob_crypto_digest_init(&openbadger_context, &digest_object);
   };
   if (status EQUALS ST_OK)
   {
-    status = eac_crypto_digest_update(&crypto_context, &digest_object, ctx->transaction_identifier, sizeof(ctx->transaction_identifier));
+    status = ob_crypto_digest_update(&openbadger_context, &digest_object, ctx->transaction_identifier, sizeof(ctx->transaction_identifier));
   };
   if (status EQUALS ST_OK)
-     status = eac_crypto_digest_finish(&crypto_context, &digest_object, digest, &digest_lth);
+     status = ob_crypto_digest_finish(&openbadger_context, &digest_object, digest, &digest_lth);
   if (status EQUALS ST_OK)
   {
-    if (crypto_context.verbosity > 3)
+    if (openbadger_context.verbosity > 3)
     {
       fprintf(LOG, "digest...\n");
       ob_dump_buffer(&openbadger_context, digest, digest_lth, 1);
@@ -289,19 +287,12 @@ int op_verify_signature
 
   if (status EQUALS ST_OK)
   {
-    pkoc_public_key.key_parameters [0] = EAC_CRYPTO_EC;
-    pkoc_public_key.key_parameters [1] = EAC_KEY_EC_CURVE_SECP256R1;
-
-    status = eac_crypto_pubkey_init(&crypto_context, &pkoc_public_key, pubkey_der, pubkey_der_length);
-  };
-  if (status EQUALS ST_OK)
-  {
     if (ctx->verbosity > 3)
     {
       if (strlen(pkoc_public_key.description) > 0)
       {
         sprintf(log_message, "public key init status %d public key type is %s\n", status, pkoc_public_key.description);
-        (crypto_context.eac_log)(log_message);
+        fprintf(openbadger_context.log, "%s", log_message);
       };
     };
   };
@@ -309,9 +300,10 @@ int op_verify_signature
   {
     memcpy(signature_object.encoded, whole_sig_shared, whole_sig_lth_shared);
     signature_object.enc_lth = whole_sig_lth_shared;
-    status = eac_crypto_verify_signature_ex(&crypto_context,
+fprintf(stderr, "DEBUG: fix verify call as we did the hash\n");
+    status = ob_crypto_verify_signature(&openbadger_context,
       &pkoc_public_key, digest, digest_lth,
-      &signature_object, &signature_info);
+      &signature_object);
     if (status EQUALS ST_OK)
       fprintf(LOG, "***SIGNATURE VALID***\n");
   };

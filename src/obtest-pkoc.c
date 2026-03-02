@@ -40,8 +40,8 @@ unsigned char spec_identifier [] = {
 
 
 #include <eac-encode.h>
-#include <ob-crypto.h>
 #include <openbadger-common.h>
+#include <ob-crypto.h>
 #include <ob-7816.h>
 #include <ob-pcsc.h>
 #include <openpkoc-version.h>

@@ -19,6 +19,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <PCSC/wintypes.h>
+#include <PCSC/pcsclite.h>
+#include <PCSC/winscard.h>
+
+
 #include <openbadger-common.h>
 #include <openpkoc.h>
 
