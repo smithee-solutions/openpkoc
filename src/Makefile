@@ -4,7 +4,7 @@
 
 # PCSC is included because their own includes get it wrong
 
-PROGS=obtest-pkoc
+PROGS=obtest-pkoc ob-pkoc-ccure-splitter
 
 CC=clang
 CFLAGS= \
@@ -26,11 +26,17 @@ all-open:	obtest-pkoc-open
 clean:
 	rm -f core *.o ${PROGS}
 
+ob-pkoc-ccure-splitter:	ob-pkoc-ccure-splitter.o Makefile
+	${LINK} -o ob-pkoc-ccure-splitter ob-pkoc-ccure-splitter.o
+
 obtest-pkoc:	Makefile obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o
 	${LINK} -o obtest-pkoc obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o ${LDFLAGS}
 
 op-pkoc.o:	op-pkoc.c
 	${CC} ${CFLAGS} op-pkoc.c
+
+ob-pkoc-ccure-splitter.o:	ob-pkoc-ccure-splitter.c
+	${CC} ${CFLAGS} ob-pkoc-ccure-splitter.c
 
 ob-pkoc-commandline.o:	ob-pkoc-commandline.c
 	${CC} ${CFLAGS} ob-pkoc-commandline.c
@@ -49,7 +55,6 @@ pkoc-osdp:	pkoc-osdp.o ob-pkoc-commandline.o Makefile
 
 pkoc-osdp.o:	pkoc-osdp.c ../include/ob-pkoc.h 
 	${CC} ${CFLAGS} pkoc-osdp.c
-
 
 obtest-pkoc-open:	Makefile obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o
 	${LINK} -o obtest-pkoc obtest-pkoc.o op-pkoc.o op-pkoc-print.o op-settings.o ${LDFLAGS_OPEN}
