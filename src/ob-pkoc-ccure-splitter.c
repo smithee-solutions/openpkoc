@@ -20,8 +20,12 @@ int main
 
 {
 
+  int i;
   int in_format;
   FILE *infile;
+  int j;
+  char octet [3];
+  char *p;
   int status;
   int status_io;
   unsigned char whole_identifier [256/8];
@@ -29,12 +33,26 @@ int main
 
   status = 0;
   in_format = FORMAT_BINARY;
+  if (*(argv [1]) == 'h')
+    in_format = FORMAT_HEX;
   switch(in_format)
   {
   default:
     fprintf(stderr, "Unknown format requested\n");
     break;
   case FORMAT_HEX:
+    p = argv [2];
+    octet [2] = 0;
+    i=0;
+    while (i < strlen(argv[2]))
+    {
+fprintf(stderr, "index %2d c1 %c c2 %c\n", i, *(p+2*i), *(1+p+2*i));
+      memcpy(octet, p+i, 2);
+      sscanf(octet, "%x", &j);
+      whole_identifier [i/2] = j;
+      i++;i++;
+    };
+    split_identifier(stdout, whole_identifier, strlen(argv[2])/2);
     break;
   case FORMAT_BINARY:
     infile = fopen(argv [2], "r");
