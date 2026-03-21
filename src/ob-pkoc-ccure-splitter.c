@@ -46,32 +46,11 @@ int main
     fprintf(stderr, "Unknown format requested\n");
     break;
   case FORMAT_HEX:
-#if 0
-    p = argv [2];
-    octet [2] = 0;
-    i=0;
-fprintf(stderr, "length %ld\n", strlen(argv[2]));
-    while (i < strlen(argv[2]))
-    {
-//fprintf(stderr, "index %2d c1 %c c2 %c\n", i, *(p+2*i), *(1+p+2*i));
-      memcpy(octet, p+i, 2);
-fprintf(stderr, "octet string is %s\n", octet);
-      sscanf(octet, "%x", &j);
-fprintf(stderr, "write to %d.\n", i/2);
-      whole_identifier [i/2] = j;
-      i++;i++;
-fprintf(stderr, "bottom index %d\n", i);
-fflush(stderr);
-    };
-    split_identifier(stdout, whole_identifier, strlen(argv[2])/2);
-#endif
-
 {
   int length;
   int bits;
 
   bits = 0;
-fprintf(stderr, "size whole %ld\n", sizeof(whole_identifier));
     p = argv [2];
     length = strlen(p);
     fprintf(stderr, "length %d\n", length);
@@ -81,10 +60,7 @@ fprintf(stderr, "size whole %ld\n", sizeof(whole_identifier));
       sscanf(octet, "%x", &j);
       bits = bits + 8;
       whole_identifier [i] = j;
-fprintf(stderr, "Storing %02X into offset %02d. %d. bits\n", j, i, bits);
       p = p+2;
-fprintf(stderr, "string now %s\n", p);
-fflush(stderr);
     };
 };
     split_identifier(stdout, whole_identifier, strlen(argv[2])/2);
@@ -146,8 +122,9 @@ void split_identifier
   unsigned long int value;
 
 
+  fprintf(stdout, "Whole 256bit identifier:\n");
   for (i=0; i<(256/8); i++)
-    fprintf(stderr, " %02X", whole_identifier [i]);
+    fprintf(stdout, " %02X", whole_identifier [i]);
   fprintf(stderr, "\n");
   offset = 0;
   memcpy(agency_code, whole_identifier+offset, sizeof(agency_code));
@@ -230,7 +207,7 @@ void split_identifier
 "         Card Number HEX:");
   for (i=0; i<sizeof(card_number); i++)
   {
-    value = (value << 8) + agency_code [i];
+    value = (value << 8) + card_number [i];
     fprintf(report, " %02X", card_number [i]);
   };
   fprintf(report, " Decimal: %lu\n", value);
