@@ -1,15 +1,13 @@
 # make file for openpkoc
 
-# (C)2023-2025 Smithee Solutions LLC
+# (C)2023-2026 Smithee Solutions LLC
 
 all:
-	echo Configured for crypto subsytem cyclone
-	cp include/ob-crypto_cyclone.h include/ob-crypto.h
+	echo Configured for crypto subsytem WolfSSL
 	(cd src; make)
 
 clean:
-	echo Configured for crypto subsytem cyclone
-	rm -f include/ob-crypto.h
+	echo Configured for crypto subsytem WolfSSL
 	(cd src; make clean)
 	(cd package; make clean)
 	rm -rf opt *.deb

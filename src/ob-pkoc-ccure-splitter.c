@@ -10,6 +10,7 @@
 
 #define FORMAT_HEX (1)
 #define FORMAT_BINARY (2)
+#define FORMAT_DECIMAL (3)
 
 
 void split_identifier(FILE *report, unsigned char *whole_identifier, int status_io);
@@ -26,32 +27,66 @@ int main
   int j;
   char octet [3];
   char *p;
+  unsigned long long pkoc_decimal;
   int status;
   int status_io;
   unsigned char whole_identifier [256/8];
 
 
   status = 0;
+  octet [2] = 0;
   in_format = FORMAT_BINARY;
   if (*(argv [1]) == 'h')
     in_format = FORMAT_HEX;
+  if (*(argv [1]) == 'd')
+    in_format = FORMAT_DECIMAL;
   switch(in_format)
   {
   default:
     fprintf(stderr, "Unknown format requested\n");
     break;
   case FORMAT_HEX:
+#if 0
     p = argv [2];
     octet [2] = 0;
     i=0;
+fprintf(stderr, "length %ld\n", strlen(argv[2]));
     while (i < strlen(argv[2]))
     {
-fprintf(stderr, "index %2d c1 %c c2 %c\n", i, *(p+2*i), *(1+p+2*i));
+//fprintf(stderr, "index %2d c1 %c c2 %c\n", i, *(p+2*i), *(1+p+2*i));
       memcpy(octet, p+i, 2);
+fprintf(stderr, "octet string is %s\n", octet);
       sscanf(octet, "%x", &j);
+fprintf(stderr, "write to %d.\n", i/2);
       whole_identifier [i/2] = j;
       i++;i++;
+fprintf(stderr, "bottom index %d\n", i);
+fflush(stderr);
     };
+    split_identifier(stdout, whole_identifier, strlen(argv[2])/2);
+#endif
+
+{
+  int length;
+  int bits;
+
+  bits = 0;
+fprintf(stderr, "size whole %ld\n", sizeof(whole_identifier));
+    p = argv [2];
+    length = strlen(p);
+    fprintf(stderr, "length %d\n", length);
+    for (i=0; i<(256/8); i++)
+    {
+      memcpy(octet, p, 2);
+      sscanf(octet, "%x", &j);
+      bits = bits + 8;
+      whole_identifier [i] = j;
+fprintf(stderr, "Storing %02X into offset %02d. %d. bits\n", j, i, bits);
+      p = p+2;
+fprintf(stderr, "string now %s\n", p);
+fflush(stderr);
+    };
+};
     split_identifier(stdout, whole_identifier, strlen(argv[2])/2);
     break;
   case FORMAT_BINARY:
@@ -68,6 +103,24 @@ fprintf(stderr, "index %2d c1 %c c2 %c\n", i, *(p+2*i), *(1+p+2*i));
     {
       status = -1;
     };
+    break;
+  case FORMAT_DECIMAL:
+    sscanf(argv [2], "%lld", &pkoc_decimal);
+    fprintf(stderr, "decimal %s %lld\n", argv [2], pkoc_decimal);
+{
+  int i;
+  unsigned char value;
+  unsigned long long temp1;
+  temp1 = pkoc_decimal;
+  for (i=0; i<sizeof(pkoc_decimal); i++)
+  {
+    value = 0xff & temp1;
+    fprintf(stderr, "i %ld. octet %02X\n",
+      sizeof(pkoc_decimal)-i, value);
+    temp1 = temp1 >> 8;
+  };
+}
+
     break;
   }
   return(status);
