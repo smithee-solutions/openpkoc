@@ -18,8 +18,8 @@ LDFLAGS_OPEN=-g -L /opt/openbadger/lib -lopenbadger -leac-encode -leac-crypto_op
 
 
 all:	${PROGS}
-	mkdir -p ../opt/osdp-conformance/bin
-	cp ${PROGS} ../opt/osdp-conformance/bin
+	mkdir -p ../opt/tester/bin
+	cp ${PROGS} ../opt/tester/bin
 
 all-open:	obtest-pkoc-open
 

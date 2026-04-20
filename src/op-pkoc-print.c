@@ -25,6 +25,7 @@
 
 
 #include <openbadger-common.h>
+#include <ob-crypto.h>
 #include <openpkoc.h>
 
 

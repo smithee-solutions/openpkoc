@@ -1,7 +1,7 @@
 /*
   openpkoc.h - PKOC parameter definitions
 
-  (C)Copyright 2023-2025 Smithee Solutions LLC
+  (C)Copyright 2023-2026 Smithee Solutions LLC
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -107,11 +107,9 @@ extern unsigned char SELECT_PKOC [];
 int ob_pkoc_commandline(PKOC_CONTEXT *ctx, int argc, char *argv[]);
 int ob_pkoc_help(PKOC_CONTEXT *ctx);
 int ob_validate_select_response(OB_CONTEXT *ctx, PKOC_CONTEXT *pkoc_ctx, unsigned char *response, int response_length);
-int op_initialize_pubkey_DER(OB_CONTEXT *ctx, unsigned char *key_buffer, int kblth,
-  unsigned char *marshalled_DER, int *marshalled_length);
-int op_initialize_signature_DER(OB_CONTEXT *ctx, unsigned char *part_1, int part1lth,
-  unsigned char *part_2, int part2lth, unsigned char *marshalled_signature,
-  int *whole_sig_lth);
+int op_initialize_pubkey_DER(OB_CONTEXT *ctx, OB_CRYPTO_OBJECT *key);
+int op_initialize_signature_DER(OB_CONTEXT *ctx, PKOC_CONTEXT *pkoc_ctx, OB_CRYPTO_OBJECT *signature);
 void op_pkoc_print (PKOC_CONTEXT *ctx, unsigned char *public_key, int public_key_length, FILE *outfile);
-int op_verify_signature(PKOC_CONTEXT *ctx, unsigned char *pubkey_der, int pubkey_der_length);
+int op_verify_signature(PKOC_CONTEXT *ctx, OB_CRYPTO_OBJECT *key,
+  unsigned char *message, int message_lth, OB_CRYPTO_OBJECT *signature);
 

@@ -1,7 +1,7 @@
 /*
   ob-pkoc - PKOC-specific routines
 
-  (C)Copyright 2023-2025 Smithee Solutions LLC
+  (C)Copyright 2023-2026 Smithee Solutions LLC
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -34,12 +34,6 @@
 #include <ob-7816.h>
 #include <openpkoc.h>
 
-// kludge.  init sig function should take pkoc context not openbadger context, it
-// builds this.
-unsigned char whole_sig_shared [16384];
-int whole_sig_lth_shared;
-
-
 // specifically for NIST P256R1
 
 unsigned char ec_public_key_der_skeleton [] =
@@ -60,49 +54,63 @@ unsigned char ec_signature_der_skeleton_2 [] =
 extern void eac_log(char *msg);
 
 
+// the input is the x9.62 (04...) sequence in the raw buffer
+
 int op_initialize_pubkey_DER
   (OB_CONTEXT *ctx,
-  unsigned char *key_buffer,
-  int kblth,
-  unsigned char *marshalled_DER,
-  int *marshalled_length)
+  OB_CRYPTO_OBJECT *key)
 
 { /* op_intiialize_pubkey_DER */
 
   FILE *ec_der_key;
+  unsigned char key_buffer_temp [32768];
+  int key_buffer_temp_lth;
+  unsigned char marshalled_DER [32768];
+  int marshalled_length;
+  int status;
 
 
-  ec_der_key = fopen(OPENPKOC_PUBLIC_KEY, "w");
-  fwrite(ec_public_key_der_skeleton, 1, sizeof(ec_public_key_der_skeleton), ec_der_key);
-  memcpy(marshalled_DER, ec_public_key_der_skeleton, sizeof(ec_public_key_der_skeleton));
-  fwrite(key_buffer, 1, kblth, ec_der_key);
-  memcpy(marshalled_DER+sizeof(ec_public_key_der_skeleton), key_buffer, kblth);
-  fclose(ec_der_key);
-  *marshalled_length = sizeof(ec_public_key_der_skeleton) + kblth;
+  marshalled_length = 0;
+  key_buffer_temp_lth = key->raw_lth;
+  memcpy(key_buffer_temp, key->raw, key->raw_lth);
+  memset(key, 0, sizeof(*key));  // we get to initialize it.
 
-  return(ST_OK);
+  // copy the encoded data to the buffer
+
+    ec_der_key = fopen(OPENPKOC_PUBLIC_KEY, "w");
+    fwrite(ec_public_key_der_skeleton, 1, sizeof(ec_public_key_der_skeleton), ec_der_key);
+    memcpy(marshalled_DER, ec_public_key_der_skeleton, sizeof(ec_public_key_der_skeleton));
+    marshalled_length = sizeof(ec_public_key_der_skeleton);
+
+    fwrite(key_buffer_temp, 1, key_buffer_temp_lth, ec_der_key);
+    memcpy(marshalled_DER+sizeof(ec_public_key_der_skeleton), key_buffer_temp, key_buffer_temp_lth);
+    marshalled_length = marshalled_length + key_buffer_temp_lth;
+
+    fclose(ec_der_key);
+
+  memcpy(key->encoded, marshalled_DER, marshalled_length);
+  key->enc_lth = marshalled_length;
+  key->key_parameters [0] = 0; // this is DER
+  status = ob_crypto_initialize_key(ctx, key, OB_CRYPTO_ALG_EC, EAC_KEY_EC_CURVE_SECP256R1);
+
+  return(status);
 
 } /* op_intiialize_pubkey_DER */
 
 
 int op_initialize_signature_DER
   (OB_CONTEXT *ctx,
-  unsigned char *part_1,
-  int part1lth,
-  unsigned char *part_2,
-  int part2lth,
-  unsigned char *marshalled_signature,
-  int *whole_sig_lth)
+  PKOC_CONTEXT *pkoc,
+  OB_CRYPTO_OBJECT *signature)
 
 { /* op_initialize_signature_DER */
 
-  FILE *ec_der_sig;
-  int lth;
+#if DEPRECATED
   unsigned char *pwholesig;
   int whole_length;
 
-//todo note the marshalled signature is returned, eliminate the shared buffer kludge...
 
+  memset(signature, 0, sizeof(*signature));  // we get to initialize it.
 
   // if the pieces have the high order bit set insert a null byte
 
@@ -160,8 +168,84 @@ int op_initialize_signature_DER
 
   fclose(ec_der_sig);
 
-  whole_sig_lth_shared = *whole_sig_lth;
-  memcpy(whole_sig_shared, marshalled_signature, whole_sig_lth_shared);
+  return(ST_OK);
+#endif
+
+  FILE *ec_der_sig;
+  int lth;
+  unsigned char *marshalled_DER;
+  unsigned char *part_1;
+  unsigned char *part_2;
+  int whole_length;
+
+
+  /*
+    the raw signature is in the context structure.  
+    this fabricates a proper DER-encoded version, writes it to disk, 
+    and sets it up in the "encoded" section of the signature crypto object.
+  */
+
+  signature->enc_lth = 0;
+  part_1 = pkoc->pkoc_signature;
+  part_2 = 32+part_1;
+  whole_length = 32 + 32 + 4;
+
+  /*
+    if the pieces have the high order bit set insert a null byte.
+    this requires tweaking the outer DER TLV.
+  */
+  if (0x80 & *part_1)
+  {
+    whole_length++;
+    ec_signature_der_skeleton_1 [3] = 0x21;
+    if (ctx->verbosity > 9)
+      fprintf(LOG, "part 1 first octet %02X\n", *part_1);
+  };
+  if (0x80 & *part_2)
+  {
+    whole_length++;
+    ec_signature_der_skeleton_2 [1] = 0x21;
+    if (ctx->verbosity > 9)
+      fprintf(LOG, "part 2 first octet %02X\n", *part_2);
+  };
+  ec_signature_der_skeleton_1 [1] = whole_length;
+
+  // build it out in the signature object and also write it out
+
+  marshalled_DER = signature->encoded;
+
+  // first part of skeleton, tweaked
+
+  lth = sizeof(ec_signature_der_skeleton_1);
+  if (!(0x80 & *part_1))
+    lth--;
+  memcpy(marshalled_DER, ec_signature_der_skeleton_1, lth);
+  marshalled_DER = marshalled_DER + lth;
+  signature->enc_lth = lth;
+
+  // first part of signature
+
+  memcpy(marshalled_DER, part_1, 32);
+  marshalled_DER = marshalled_DER + 32;
+  signature->enc_lth = signature->enc_lth + 32;
+
+  // second part of skeleton, tweaked
+  lth = sizeof(ec_signature_der_skeleton_2);
+  if (!(0x80 & *part_2))
+    lth--;
+  memcpy(marshalled_DER, ec_signature_der_skeleton_2, lth);
+  marshalled_DER = marshalled_DER + lth;
+  signature->enc_lth = signature->enc_lth + lth;
+
+  // second part of signature
+
+  memcpy(marshalled_DER, part_2, 32);
+  marshalled_DER = marshalled_DER + 32;
+  signature->enc_lth = signature->enc_lth + 32;
+
+  ec_der_sig = fopen("ec-sig.der", "w");
+  fwrite(signature->encoded, sizeof(signature->encoded[0]), signature->enc_lth, ec_der_sig);
+  fclose(ec_der_sig);
 
   return(ST_OK);
 
@@ -237,73 +321,42 @@ status = ST_OK;
 } /* ob_validate_select_response */
 
 
+// assumes pkoc_public_key is fully initialized.
+
 int op_verify_signature
   (PKOC_CONTEXT *ctx,
-  unsigned char *pubkey_der,
-  int pubkey_der_length)
+  OB_CRYPTO_OBJECT *pkoc_public_key,
+  unsigned char *message,
+  int message_lth,
+  OB_CRYPTO_OBJECT *signature_object)
 
 { /* op_verify_signature */
 
-  unsigned char digest [EAC_CRYPTO_SHA256_DIGEST_SIZE];
-  int digest_lth;
-  OB_CRYPTO_OBJECT digest_object;
   char log_message [2048];
   OB_CONTEXT openbadger_context;
-  OB_CRYPTO_OBJECT pkoc_public_key;
-  OB_CRYPTO_OBJECT signature_object;
   int status;
 
 
   status = ST_OK;
-
-  if (status EQUALS ST_OK)
-  {
-    memset(&openbadger_context, 0, sizeof(openbadger_context));
-    openbadger_context.verbosity = ctx->verbosity;
-    openbadger_context.log = ctx->log;
-
-    pkoc_public_key.key_parameters [0] = EAC_CRYPTO_EC;
-    pkoc_public_key.key_parameters [1] = EAC_KEY_EC_CURVE_SECP256R1;
-    status = ob_crypto_initialize_key(&openbadger_context, &pkoc_public_key, OB_CRYPTO_ALG_EC, OB_CRYPTO_CURVE_SECP256R1);
-    if (status EQUALS ST_OK)
-      status = ob_crypto_digest_init(&openbadger_context, &digest_object);
-  };
-  if (status EQUALS ST_OK)
-  {
-    status = ob_crypto_digest_update(&openbadger_context, &digest_object, ctx->transaction_identifier, sizeof(ctx->transaction_identifier));
-  };
-  if (status EQUALS ST_OK)
-     status = ob_crypto_digest_finish(&openbadger_context, &digest_object, digest, &digest_lth);
-  if (status EQUALS ST_OK)
-  {
-    if (openbadger_context.verbosity > 3)
-    {
-      fprintf(LOG, "digest...\n");
-      ob_dump_buffer(&openbadger_context, digest, digest_lth, 1);
-    };
-  };
-  if (digest_object.internal)
-      free(digest_object.internal);
+  memset(&openbadger_context, 0, sizeof(openbadger_context));
+  openbadger_context.verbosity = ctx->verbosity;
+  openbadger_context.log = ctx->log;
 
   if (status EQUALS ST_OK)
   {
     if (ctx->verbosity > 3)
     {
-      if (strlen(pkoc_public_key.description) > 0)
+      if (strlen(pkoc_public_key->description) > 0)
       {
-        sprintf(log_message, "public key init status %d public key type is %s\n", status, pkoc_public_key.description);
+        sprintf(log_message, "public key init status %d public key type is %s\n", status, pkoc_public_key->description);
         fprintf(openbadger_context.log, "%s", log_message);
       };
     };
   };
   if (status EQUALS ST_OK)
   {
-    memcpy(signature_object.encoded, whole_sig_shared, whole_sig_lth_shared);
-    signature_object.enc_lth = whole_sig_lth_shared;
-fprintf(stderr, "DEBUG: fix verify call as we did the hash\n");
-    status = ob_crypto_verify_signature(&openbadger_context,
-      &pkoc_public_key, digest, digest_lth,
-      &signature_object);
+    status = ob_crypto_verify_signature(&openbadger_context, 
+      pkoc_public_key, message, message_lth, signature_object);
     if (status EQUALS ST_OK)
       fprintf(LOG, "***SIGNATURE VALID***\n");
   };

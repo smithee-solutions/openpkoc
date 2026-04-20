@@ -67,20 +67,17 @@ int main
   BYTE pbRecvBuffer [2*OB_7816_APDU_PAYLOAD_MAX];
   OB_RDRCTX pcsc_reader_context;
   PKOC_CONTEXT pkoc_context;
-  EAC_ENCODE_OBJECT pkoc_public_key;
+  OB_CRYPTO_OBJECT pkoc_public_key;
   unsigned char pkoc_signature [EAC_CRYPTO_MAX_DER];
-  unsigned char pubkey_der [8192];
-  int pubkey_der_length;
   OB_RDRCTX *rdrctx;
-  unsigned char saved_public_key [1024];
+  unsigned char saved_public_key [1024]; // used for credential delivery not crypto
+  OB_CRYPTO_OBJECT signature_object;
   unsigned char smartcard_command [OB_7816_BUFFER_MAX];
   int smartcard_command_length;
   int status;
   LONG status_pcsc;
   OB_CONTEXT test_pkoc_context;
   char verify_command [1024];
-  unsigned char whole_sig [16384];
-  int whole_sig_lth;
 
 
   status = ST_OK;
@@ -256,10 +253,10 @@ int main
       p++;
       remainder--;
 
-      memcpy(pkoc_public_key.encoded, p, payload_size);
-      pkoc_public_key.enc_lth = payload_size;
+      memcpy(pkoc_public_key.raw, p, payload_size);
+      pkoc_public_key.raw_lth = payload_size;
+      memcpy(saved_public_key, p, payload_size);
 
-      memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
@@ -289,10 +286,9 @@ int main
       p++;
       remainder--;
 
-      memcpy(pkoc_public_key.encoded, p, payload_size);
-      pkoc_public_key.enc_lth = payload_size;
+      memcpy(pkoc_public_key.raw, p, payload_size);
+      pkoc_public_key.raw_lth = payload_size;
 
-      memcpy(pkoc_context.ec_public_key, p, payload_size);
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
@@ -305,21 +301,28 @@ int main
     };
 
     // output a DER-formatted copy of the public key.
-    status = op_initialize_pubkey_DER(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, pubkey_der, &pubkey_der_length);
+    status = op_initialize_pubkey_DER(ctx, &pkoc_public_key);
     op_pkoc_print(&pkoc_context, pkoc_public_key.encoded, pkoc_public_key.enc_lth, LOG);
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
       ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
     };
-memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
     if (status EQUALS ST_OK)
       fprintf(LOG, "file %s created\n", OPENPKOC_PUBLIC_KEY);
   };
   if (status EQUALS ST_OK)
   {
-    // output a DER-formatted copy of the signature.
-    status = op_initialize_signature_DER(ctx, pkoc_signature, 32, pkoc_signature+32, 32, whole_sig, &whole_sig_lth);
+    if (ctx->verbosity > 3)
+    {
+      fprintf(LOG, "DEBUG: signature is\n");
+      ob_dump_buffer(ctx, pkoc_signature, 64, 1);
+    };
+
+    // create a signature object, this also write a copy of the signature 
+    // in DER format
+    status = op_initialize_signature_DER(ctx, &pkoc_context, &signature_object);
+
     if (status EQUALS ST_OK)
       fprintf(LOG, "file ec-sig.der created\n");
   };
@@ -349,7 +352,8 @@ memcpy(saved_public_key, pkoc_public_key.encoded, pkoc_public_key.enc_lth);
   if (status EQUALS ST_OK)
   {
     fprintf(LOG, "Verifying signature.\n");
-    status = op_verify_signature(&pkoc_context, pubkey_der, pubkey_der_length);
+    status = op_verify_signature(&pkoc_context, &pkoc_public_key,
+      pkoc_context.transaction_identifier, sizeof(pkoc_context.transaction_identifier), &signature_object);
   };
 
   if (status != ST_OK)

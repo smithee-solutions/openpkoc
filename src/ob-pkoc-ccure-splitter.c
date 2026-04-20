@@ -132,16 +132,17 @@ void split_identifier
   memcpy(cardint1, whole_identifier+offset, sizeof(cardint1));
   offset = offset + sizeof(cardint1);
   memcpy(cardint2, whole_identifier+offset, sizeof(cardint2));
-  offset = offset + sizeof(cardint1);
+  offset = offset + sizeof(cardint2);
   memcpy(cardint3, whole_identifier+offset, sizeof(cardint3));
-  offset = offset + sizeof(cardint1);
+  offset = offset + sizeof(cardint3);
   memcpy(cardint4, whole_identifier+offset, sizeof(cardint4));
-  offset = offset + sizeof(cardint1);
+  offset = offset + sizeof(cardint4);
   memcpy(personnel_identifier, whole_identifier+offset, sizeof(personnel_identifier));
   offset = offset + sizeof(cardint1);
   memcpy(card_number, whole_identifier+offset, sizeof(card_number));
   offset = offset + sizeof(cardint1);
 
+  fprintf(report, "PKOC 256bit Split:\n");
   fprintf(report,
 "         Agency Code HEX:");
   value = 0;
@@ -202,6 +203,42 @@ void split_identifier
   };
   fprintf(report, " Decimal: %lu\n", value);
 
+  value = 0;
+  fprintf(report,
+"         Card Number HEX:");
+  for (i=0; i<sizeof(card_number); i++)
+  {
+    value = (value << 8) + card_number [i];
+    fprintf(report, " %02X", card_number [i]);
+  };
+  fprintf(report, " Decimal: %lu\n", value);
+
+  fprintf(report, "\nPKOC 128bit Split:\n");
+  offset = 128/8;
+  memcpy(cardint1, whole_identifier+offset, sizeof(cardint1));
+  offset = offset + sizeof(cardint1);
+  memcpy(cardint2, whole_identifier+offset, sizeof(cardint2));
+  offset = offset + sizeof(cardint2);
+  memcpy(card_number, whole_identifier+offset, sizeof(card_number));
+  offset = offset + sizeof(cardint1);
+  fprintf(report,
+"            CardInt1 HEX:");
+  value = 0;
+  for (i=0; i<sizeof(cardint1); i++)
+  {
+    value = (value << 8) + cardint1 [i];
+    fprintf(report, " %02X", cardint1 [i]);
+  };
+  fprintf(report, " Decimal: %lu\n", value);
+  fprintf(report,
+"            CardInt2 HEX:");
+  value = 0;
+  for (i=0; i<sizeof(cardint1); i++)
+  {
+    value = (value << 8) + cardint2 [i];
+    fprintf(report, " %02X", cardint2 [i]);
+  };
+  fprintf(report, " Decimal: %lu\n", value);
   value = 0;
   fprintf(report,
 "         Card Number HEX:");
