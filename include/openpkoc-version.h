@@ -16,5 +16,5 @@
    limitations under the License.
 */
 
-#define OPENPKOC_VERSION "1.40"
+#define OPENPKOC_VERSION "2.00"
 

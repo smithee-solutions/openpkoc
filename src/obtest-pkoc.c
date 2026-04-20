@@ -77,6 +77,7 @@ int main
   int status;
   LONG status_pcsc;
   OB_CONTEXT test_pkoc_context;
+  char transponder_response [1024];
   char verify_command [1024];
 
 
@@ -302,9 +303,9 @@ int main
 
     // output a DER-formatted copy of the public key.
     status = op_initialize_pubkey_DER(ctx, &pkoc_public_key);
-    op_pkoc_print(&pkoc_context, pkoc_public_key.encoded, pkoc_public_key.enc_lth, LOG);
     if (ctx->verbosity > 3)
     {
+      op_pkoc_print(&pkoc_context, pkoc_public_key.encoded, pkoc_public_key.enc_lth, LOG);
       fprintf(LOG, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
       ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
     };
@@ -341,12 +342,15 @@ int main
       DER-formatted copy of the public key extracted from the card,
       use openssl to perform an ECDSA signature verification operation.
     */
+    if (ctx->verbosity > 3)
+    {
     sprintf(verify_command, "openssl version;openssl dgst -sha256 -verify %s -signature ec-sig.der tbs-pkoc.bin", OPENPKOC_PUBLIC_KEY);
     if (ctx->verbosity > 3)
       fprintf(LOG, "verify command: %s\n", verify_command);
     if (ctx->verbosity > 0)
       fprintf(LOG, "Checking signature with openssl\n");
     system(verify_command);
+    };
   };
 
   if (status EQUALS ST_OK)
@@ -386,13 +390,18 @@ fprintf(LOG, "assuming low order 128 bits.\n");
       return_size = 128/8;
     }
 
-    sprintf(osdp_command, "{\"command\":\"present-card\",\"format\":\"raw\",\"bits\":\"%d\",\"raw\":\"", ctx->bits_to_return);
-
     for (i=0; i<return_size; i++)
     {
       sprintf(octet_string, "%02X", raw_key [i]);
-      strcat(osdp_command, octet_string);
     };
+
+    sprintf(transponder_response,
+      "{\"bits\":\"%d\",\"raw\":\"%s\"}", ctx->bits_to_return, octet_string);
+    printf("%s", transponder_response);
+
+    sprintf(osdp_command, "{\"command\":\"present-card\",\"format\":\"raw\",\"bits\":\"%d\",\"raw\":\"", ctx->bits_to_return);
+    strcat(osdp_command, octet_string);
+
     strcat(osdp_command, "\"}\n");
     if (ctx->verbosity > 2)
       fprintf(LOG, "OSDP Response will be:\n%s", osdp_command);

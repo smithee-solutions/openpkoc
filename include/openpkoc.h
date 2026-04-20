@@ -17,7 +17,7 @@
 */
 
 
-#define LOG stdout
+#define LOG stderr
 #define OPENPKOC_PUBLIC_KEY "ec-public-key.der"
 #define OPENPKOC_SETTINGS_FILE "openpkoc-settings.json"
 
