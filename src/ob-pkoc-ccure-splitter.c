@@ -1,11 +1,13 @@
 /*
   ob-pkoc-ccure-splitter h hexval 
   b binary filename
+  d the various values from ccure, assembles
 */
 
 
 #include <stdio.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 
 #define FORMAT_HEX (1)
@@ -83,6 +85,7 @@ int main
   case FORMAT_DECIMAL:
     sscanf(argv [2], "%lld", &pkoc_decimal);
     fprintf(stderr, "decimal %s %lld\n", argv [2], pkoc_decimal);
+if (0)
 {
   int i;
   unsigned char value;
@@ -96,6 +99,57 @@ int main
     temp1 = temp1 >> 8;
   };
 }
+    {
+      /*
+        Usage:
+ 
+          d <card number> <agency code> <cardint1> <cardint2> <cardint3> <cardint4> <CHUID> <personnel identifier>
+
+
+16661207759009190701 3455709346 3164453881 3598052062 16661207759009190701373872005319476006243897735 3738720053
+
+//"Card Number" : "16661207759009190701"
+//"Agency Code" : "3455709346"
+//"Cardint1" : "3164453881"
+//"CardInt2" : "3598052062"
+//"CardInt3" : "3897735275"
+//"Cardint4" : "1947600624"
+//"CHUID" : "16661207759009190701373872005319476006243897735"
+//"Personnel Identifier" : "3738720053"
+      */
+      unsigned long int value;
+      int offset;
+      unsigned char assembled_identifier [256/8];
+
+      memset(assembled_identifier, 0, sizeof(assembled_identifier));
+      offset = 0;
+      sscanf(argv [3], "%ld", &value);
+      value = htonl(value);
+      memcpy(assembled_identifier+offset, &value, 32/8);
+      offset = offset + 32/8;
+      sscanf(argv [4], "%ld", &value);
+      value = htonl(value);
+      memcpy(assembled_identifier+offset, &value, 32/8);
+      offset = offset + 32/8;
+      sscanf(argv [5], "%ld", &value);
+      value = htonl(value);
+      memcpy(assembled_identifier+offset, &value, 32/8);
+      offset = offset + 32/8;
+      sscanf(argv [6], "%ld", &value);
+      value = htonl(value);
+      memcpy(assembled_identifier+offset, &value, 32/8);
+      offset = offset + 32/8;
+      sscanf(argv [7], "%ld", &value);
+      value = htonl(value);
+      memcpy(assembled_identifier+offset, &value, 32/8);
+      for (i=0; i<(256/8); i++)
+      {
+        fprintf(stdout, "%02X", *(i+assembled_identifier));
+      };
+      fprintf(stdout, "\n");
+
+// 2=<card number> 3=<agency code> 4=<cardint1> 5=<cardint2> 6=<cardint3> 7=<cardint4> <CHUID> <personnel identifier>
+    };
 
     break;
   }
