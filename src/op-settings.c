@@ -28,7 +28,6 @@
 #include <jansson.h>
 
 
-#include <eac-encode.h>
 #include <openbadger-common.h>
 #include <ob-crypto.h>
 

@@ -12,7 +12,7 @@ CFLAGS= \
   -I/opt/openbadger/include -I/opt/tester/include \
   -I/usr/include/PCSC -Wall -Werror
 LINK=clang
-LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -lopenbadger-crypto-lite -leac-encode -L /opt/crypto/lib -lwolfssl -ljansson -lpcsclite 
+LDFLAGS=-g -L /opt/openbadger/lib -lopenbadger -lopenbadger-crypto-lite -L /opt/crypto/lib -lwolfssl -ljansson -lpcsclite 
 
 LDFLAGS_OPEN=-g -L /opt/openbadger/lib -lopenbadger -leac-encode -leac-crypto_open-gcm -ljansson -lpcsclite 
 

@@ -13,7 +13,7 @@ unsigned char spec_identifier [] = {
   generates on stdout a command appropriate to cause
   libosdp-conformance to emit an osdp_RAW message via OSDP
 
-  (C)Copyright 2023-2025 Smithee Solutions LLC
+  (C)Copyright 2026 Cottwol Consulting
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ unsigned char spec_identifier [] = {
 #include <PCSC/winscard.h>
 
 
-#include <eac-encode.h>
 #include <openbadger-common.h>
 #include <ob-crypto.h>
 #include <ob-7816.h>
 #include <ob-pcsc.h>
+#include <ob-encode.h>
 #include <openpkoc-version.h>
 #include <openpkoc.h>
 int ob_read_settings(OB_CONTEXT *ctx);

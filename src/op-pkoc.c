@@ -28,7 +28,6 @@
 #include <PCSC/winscard.h>
 
 
-#include <eac-encode.h>
 #include <openbadger-common.h>
 #include <ob-crypto.h>
 #include <ob-7816.h>
@@ -92,7 +91,7 @@ int op_initialize_pubkey_DER
   key->enc_lth = marshalled_length;
   key->key_parameters [0] = 0; // this is DER
   key->key_parameters [OB_CKPARM_ALGO] = OB_CRYPTO_ALG_EC;
-  key->key_parameters [OB_CKPARM_SIZE_CURVE] = EAC_KEY_EC_CURVE_SECP256R1;
+  key->key_parameters [OB_CKPARM_SIZE_CURVE] = OB_CRYPTO_CURVE_SECP256R1;
   status = ob_crypto_pk_initialize(ctx, key);
 
   return(status);
