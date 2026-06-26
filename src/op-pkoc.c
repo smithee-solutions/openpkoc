@@ -1,7 +1,7 @@
 /*
   ob-pkoc - PKOC-specific routines
 
-  (C)Copyright 2023-2026 Smithee Solutions LLC
+  (C)Copyright 2026 Cottwol Consulting
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -91,7 +91,9 @@ int op_initialize_pubkey_DER
   memcpy(key->encoded, marshalled_DER, marshalled_length);
   key->enc_lth = marshalled_length;
   key->key_parameters [0] = 0; // this is DER
-  status = ob_crypto_initialize_key(ctx, key, OB_CRYPTO_ALG_EC, EAC_KEY_EC_CURVE_SECP256R1);
+  key->key_parameters [OB_CKPARM_ALGO] = OB_CRYPTO_ALG_EC;
+  key->key_parameters [OB_CKPARM_SIZE_CURVE] = EAC_KEY_EC_CURVE_SECP256R1;
+  status = ob_crypto_pk_initialize(ctx, key);
 
   return(status);
 
