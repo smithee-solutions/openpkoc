@@ -68,7 +68,7 @@ int main
   OB_RDRCTX pcsc_reader_context;
   PKOC_CONTEXT pkoc_context;
   OB_CRYPTO_OBJECT pkoc_public_key;
-  unsigned char pkoc_signature [EAC_CRYPTO_MAX_DER];
+  unsigned char pkoc_signature [OB_DER_MAX];
   OB_RDRCTX *rdrctx;
   unsigned char saved_public_key [1024]; // used for credential delivery not crypto
   OB_CRYPTO_OBJECT signature_object;
@@ -277,8 +277,12 @@ int main
       p = p + payload_size;
       remainder = remainder - payload_size;
     };
+    // if there are more than 2 octets left there are more fields.
     if (ctx->verbosity > 3)
-      fprintf(ctx->log, "Auth tag %02x\n", *p);
+    {
+      if (remainder > 2)
+        fprintf(ctx->log, "Auth tag %02x\n", *p);
+    };
     if (*p EQUALS OB_PKOC_TAG_UNCOMP_PUBLIC_KEY)
     {
       p++;
@@ -296,7 +300,7 @@ int main
     if (ctx->verbosity > 3)
     {
       fprintf(LOG, "Public Key:\n");
-      ob_dump_buffer (ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
+      ob_dump_buffer (ctx, pkoc_public_key.raw, pkoc_public_key.raw_lth, 1);
       fprintf(LOG, "Signature:\n");
       ob_dump_buffer (ctx, pkoc_context.pkoc_signature, 64, 1);
     };
@@ -305,7 +309,7 @@ int main
     status = op_initialize_pubkey_DER(ctx, &pkoc_public_key);
     if (ctx->verbosity > 3)
     {
-      op_pkoc_print(&pkoc_context, pkoc_public_key.encoded, pkoc_public_key.enc_lth, LOG);
+      op_pkoc_print(&pkoc_context, pkoc_public_key.raw, pkoc_public_key.raw_lth, LOG);
       fprintf(LOG, "DEBUG: public key (%d.)\n", pkoc_public_key.enc_lth);
       ob_dump_buffer(ctx, pkoc_public_key.encoded, pkoc_public_key.enc_lth, 1);
     };
@@ -367,7 +371,8 @@ int main
   {
     char command [1024];
     int i;
-    char octet_string [3];
+    char octet [3];
+    char octet_string [1024];
     int offset;
     char osdp_command [2048];
     unsigned char raw_key [64];
@@ -390,9 +395,11 @@ fprintf(LOG, "assuming low order 128 bits.\n");
       return_size = 128/8;
     }
 
+    octet_string [0] = 0;
     for (i=0; i<return_size; i++)
     {
-      sprintf(octet_string, "%02X", raw_key [i]);
+      sprintf(octet, "%02X", raw_key [i]);
+      strcat(octet_string, octet);
     };
 
     sprintf(transponder_response,

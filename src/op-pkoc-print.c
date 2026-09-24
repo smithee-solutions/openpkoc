@@ -29,6 +29,12 @@
 #include <openpkoc.h>
 
 
+/*
+  Inputs:
+
+  public_key - raw public key in uncompressed X9.62 format (04 at the front)
+  public_key_length - length of raw key.
+*/
 void
   op_pkoc_print
     (PKOC_CONTEXT *ctx,
@@ -50,10 +56,10 @@ void
   print_offset = 1+(128/8);
   print_length = 128/8;
   fprintf(outfile, "Low 128:\n");
-  ob_dump_buffer(ctx->ob_ctx, public_key+print_offset, print_length, 1);
+  ob_dump_buffer(ctx->ob_ctx, public_key+print_offset, print_length, 0);
   print_offset = 1+(128/8)+(64/8);
   print_length = 64/8;
   fprintf(outfile, "Low 64:\n");
-  ob_dump_buffer(ctx->ob_ctx, public_key+print_offset, print_length, 1);
+  ob_dump_buffer(ctx->ob_ctx, public_key+print_offset, print_length, 0);
 }
 

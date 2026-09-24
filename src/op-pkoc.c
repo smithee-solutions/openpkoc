@@ -55,6 +55,9 @@ extern void eac_log(char *msg);
 
 // the input is the x9.62 (04...) sequence in the raw buffer
 
+// since the init call consume the structure, save the raw and put it
+// back.
+
 int op_initialize_pubkey_DER
   (OB_CONTEXT *ctx,
   OB_CRYPTO_OBJECT *key)
@@ -93,6 +96,8 @@ int op_initialize_pubkey_DER
   key->key_parameters [OB_CKPARM_ALGO] = OB_CRYPTO_ALG_EC;
   key->key_parameters [OB_CKPARM_SIZE_CURVE] = OB_CRYPTO_CURVE_SECP256R1;
   status = ob_crypto_pk_initialize(ctx, key);
+  memcpy(key->raw, key_buffer_temp, key_buffer_temp_lth);
+  key->raw_lth = key_buffer_temp_lth;
 
   return(status);
 
